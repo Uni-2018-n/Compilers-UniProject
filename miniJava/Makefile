@@ -6,5 +6,5 @@ compile:
 	javac Main.java
 
 clean:
-	rm -f *.class *~
+	rm -rf *.class *~ syntaxtree visitor minijava-jtb.jj
 
