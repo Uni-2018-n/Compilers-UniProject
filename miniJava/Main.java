@@ -25,6 +25,9 @@ public class Main {
 
             MyVisitor eval = new MyVisitor();
             root.accept(eval, null);
+            System.out.println("Classes: " + eval.classes);
+            System.out.println("Extended: " + eval.extended);
+            System.out.println("Classes_small: " + eval.classes_small);
         }
         catch(ParseException ex){
             System.out.println(ex.getMessage());
@@ -45,6 +48,10 @@ public class Main {
 
 
 class MyVisitor extends GJDepthFirst<String, Void>{
+    int classes=0;
+    int extended=0;
+    int classes_small=0;
+
     /**
      * f0 -> "class"
      * f1 -> Identifier()
@@ -65,16 +72,20 @@ class MyVisitor extends GJDepthFirst<String, Void>{
      * f16 -> "}"
      * f17 -> "}"
      */
-    @Override
     public String visit(MainClass n, Void argu) throws Exception {
-        String classname = n.f1.accept(this, null);
-        System.out.println("Class: " + classname);
+        String _ret=null;
+        System.out.println(n.f1.accept(this, argu));
+        classes++;
+        return _ret;
+    }
 
-        super.visit(n, argu);
-
-        System.out.println();
-
-        return null;
+    /**
+     * f0 -> ClassDeclaration()
+     *       | ClassExtendsDeclaration()
+     */
+    public String visit(TypeDeclaration n, Void argu) throws Exception {
+        classes++;
+        return n.f0.accept(this, argu);
     }
 
     /**
@@ -85,16 +96,11 @@ class MyVisitor extends GJDepthFirst<String, Void>{
      * f4 -> ( MethodDeclaration() )*
      * f5 -> "}"
      */
-    @Override
     public String visit(ClassDeclaration n, Void argu) throws Exception {
-        String classname = n.f1.accept(this, null);
-        System.out.println("Class: " + classname);
-
-        super.visit(n, argu);
-
-        System.out.println();
-
-        return null;
+        String _ret=null;
+        System.out.println(n.f1.accept(this, argu));
+        classes_small++;
+        return _ret;
     }
 
     /**
@@ -107,107 +113,17 @@ class MyVisitor extends GJDepthFirst<String, Void>{
      * f6 -> ( MethodDeclaration() )*
      * f7 -> "}"
      */
-    @Override
     public String visit(ClassExtendsDeclaration n, Void argu) throws Exception {
-        String classname = n.f1.accept(this, null);
-        System.out.println("Class: " + classname);
-
-        super.visit(n, argu);
-
-        System.out.println();
-
-        return null;
+        String _ret=null;
+        System.out.println(n.f1.accept(this, argu));
+        extended++;
+        return _ret;
     }
 
     /**
-     * f0 -> "public"
-     * f1 -> Type()
-     * f2 -> Identifier()
-     * f3 -> "("
-     * f4 -> ( FormalParameterList() )?
-     * f5 -> ")"
-     * f6 -> "{"
-     * f7 -> ( VarDeclaration() )*
-     * f8 -> ( Statement() )*
-     * f9 -> "return"
-     * f10 -> Expression()
-     * f11 -> ";"
-     * f12 -> "}"
+     * f0 -> <IDENTIFIER>
      */
-    @Override
-    public String visit(MethodDeclaration n, Void argu) throws Exception {
-        String argumentList = n.f4.present() ? n.f4.accept(this, null) : "";
-
-        String myType = n.f1.accept(this, null);
-        String myName = n.f2.accept(this, null);
-
-        System.out.println(myType + " " + myName + " -- " + argumentList);
-        return null;
-    }
-
-    /**
-     * f0 -> FormalParameter()
-     * f1 -> FormalParameterTail()
-     */
-    @Override
-    public String visit(FormalParameterList n, Void argu) throws Exception {
-        String ret = n.f0.accept(this, null);
-
-        if (n.f1 != null) {
-            ret += n.f1.accept(this, null);
-        }
-
-        return ret;
-    }
-
-    /**
-     * f0 -> FormalParameter()
-     * f1 -> FormalParameterTail()
-     */
-    public String visit(FormalParameterTerm n, Void argu) throws Exception {
-        return n.f1.accept(this, argu);
-    }
-
-    /**
-     * f0 -> ","
-     * f1 -> FormalParameter()
-     */
-    @Override
-    public String visit(FormalParameterTail n, Void argu) throws Exception {
-        String ret = "";
-        for ( Node node: n.f0.nodes) {
-            ret += ", " + node.accept(this, null);
-        }
-
-        return ret;
-    }
-
-    /**
-     * f0 -> Type()
-     * f1 -> Identifier()
-     */
-    @Override
-    public String visit(FormalParameter n, Void argu) throws Exception{
-        String type = n.f0.accept(this, null);
-        String name = n.f1.accept(this, null);
-        return type + " " + name;
-    }
-
-    @Override
-    public String visit(ArrayType n, Void argu) {
-        return "int[]";
-    }
-
-    public String visit(BooleanType n, Void argu) {
-        return "boolean";
-    }
-
-    public String visit(IntegerType n, Void argu) {
-        return "int";
-    }
-
-    @Override
-    public String visit(Identifier n, Void argu) {
-        return n.f0.toString();
+    public String visit(Identifier n, Void argu) throws Exception {
+        return n.f0.tokenImage;
     }
 }
