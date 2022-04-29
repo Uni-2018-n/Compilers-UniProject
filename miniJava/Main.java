@@ -4,6 +4,7 @@ import visitor.*;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.HashMap;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -25,9 +26,13 @@ public class Main {
 
             MyVisitor eval = new MyVisitor();
             root.accept(eval, null);
-            System.out.println("Classes: " + eval.classes);
-            System.out.println("Extended: " + eval.extended);
-            System.out.println("Classes_small: " + eval.classes_small);
+            for (String i : eval.fields.keySet()) {
+                System.out.print(i+"->{");
+                for(String j : eval.fields.get(i).keySet()){
+                    System.out.print(j+"("+eval.fields.get(i).get(j)+"), ");
+                }
+                System.out.println("}");
+            }
         }
         catch(ParseException ex){
             System.out.println(ex.getMessage());
@@ -47,10 +52,11 @@ public class Main {
 }
 
 
-class MyVisitor extends GJDepthFirst<String, Void>{
-    int classes=0;
-    int extended=0;
-    int classes_small=0;
+class MyVisitor extends GJDepthFirst<String, String>{
+//    HashMap<Pair<String, String>, String> fields = new HashMap<new Pair<String, String>, String> ();
+    //className -> fieldName -> type
+    HashMap<String, HashMap<String, String>> fields  = new HashMap<String, HashMap<String, String>>();
+    HashMap<String, String>                  classes = new HashMap<String, String>();
 
     /**
      * f0 -> "class"
@@ -64,27 +70,29 @@ class MyVisitor extends GJDepthFirst<String, Void>{
      * f8 -> "String"
      * f9 -> "["
      * f10 -> "]"
-     * f11 -> Identifier()
+     * f11 -> Identifier() /+
      * f12 -> ")"
      * f13 -> "{"
-     * f14 -> ( VarDeclaration() )*
+     * f14 -> ( VarDeclaration() )* /+
      * f15 -> ( Statement() )*
      * f16 -> "}"
      * f17 -> "}"
      */
-    public String visit(MainClass n, Void argu) throws Exception {
-        String _ret=null;
-        System.out.println(n.f1.accept(this, argu));
-        classes++;
-        return _ret;
+    public String visit(MainClass n, String argu) throws Exception {
+        String cID = n.f1.accept(this, null);
+        String paramID = n.f11.accept(this, null);
+        classes.put(cID, "");
+        fields.put(paramID, new HashMap<String, String>());
+        fields.get(paramID).put(cID, "stringArray");
+        n.f14.accept(this, cID);
+        return null;
     }
 
     /**
      * f0 -> ClassDeclaration()
      *       | ClassExtendsDeclaration()
      */
-    public String visit(TypeDeclaration n, Void argu) throws Exception {
-        classes++;
+    public String visit(TypeDeclaration n, String argu) throws Exception {
         return n.f0.accept(this, argu);
     }
 
@@ -92,15 +100,15 @@ class MyVisitor extends GJDepthFirst<String, Void>{
      * f0 -> "class"
      * f1 -> Identifier()
      * f2 -> "{"
-     * f3 -> ( VarDeclaration() )*
+     * f3 -> ( VarDeclaration() )* /+
      * f4 -> ( MethodDeclaration() )*
      * f5 -> "}"
      */
-    public String visit(ClassDeclaration n, Void argu) throws Exception {
-        String _ret=null;
-        System.out.println(n.f1.accept(this, argu));
-        classes_small++;
-        return _ret;
+    public String visit(ClassDeclaration n, String argu) throws Exception {
+        String cID = n.f1.accept(this, null);
+        classes.put(cID, "");
+        n.f3.accept(this, cID);
+        return null;
     }
 
     /**
@@ -109,21 +117,97 @@ class MyVisitor extends GJDepthFirst<String, Void>{
      * f2 -> "extends"
      * f3 -> Identifier()
      * f4 -> "{"
-     * f5 -> ( VarDeclaration() )*
+     * f5 -> ( VarDeclaration() )* /+
      * f6 -> ( MethodDeclaration() )*
      * f7 -> "}"
      */
-    public String visit(ClassExtendsDeclaration n, Void argu) throws Exception {
-        String _ret=null;
-        System.out.println(n.f1.accept(this, argu));
-        extended++;
-        return _ret;
+    public String visit(ClassExtendsDeclaration n, String argu) throws Exception {
+        String cID = n.f1.accept(this, null);
+        String cExID = n.f3.accept(this, null);
+        if(classes.containsKey(cExID) && !classes.get(cExID).equals("")){
+            classes.put(cID, classes.get(cExID)+"::"+cExID);
+        }else{
+            classes.put(cID, cExID);
+        }
+        n.f5.accept(this, classes.get(cID)+"::"+cID);
+        return null;
+    }
+
+    /**
+     * f0 -> Type()
+     * f1 -> Identifier()
+     * f2 -> ";"
+     */
+    public String visit(VarDeclaration n, String argu) throws Exception {
+        String type = n.f0.accept(this, null);
+        String id= n.f1.accept(this, null);
+        if(!fields.containsKey(id)){
+            fields.put(id, new HashMap<String, String>());
+            fields.get(id).put(argu, type);
+        }else{
+            if(fields.get(id).containsKey(argu)){
+                System.out.println("error multiple same-id variables");
+            }else{
+                fields.get(id).put(argu, type);
+            }
+        }
+        return null;
     }
 
     /**
      * f0 -> <IDENTIFIER>
      */
-    public String visit(Identifier n, Void argu) throws Exception {
+    public String visit(Identifier n, String argu) throws Exception {
         return n.f0.tokenImage;
+    }
+
+    /**
+     * f0 -> ArrayType()
+     *       | BooleanType()
+     *       | IntegerType()
+     *       | Identifier()
+     */
+    public String visit(Type n, String argu) throws Exception {
+        return n.f0.accept(this, argu);
+    }
+
+    /**
+     * f0 -> BooleanArrayType()
+     *       | IntegerArrayType()
+     */
+    public String visit(ArrayType n, String argu) throws Exception {
+        return n.f0.accept(this, argu);
+    }
+
+    /**
+     * f0 -> "boolean"
+     * f1 -> "["
+     * f2 -> "]"
+     */
+    public String visit(BooleanArrayType n, String argu) throws Exception {
+        return "boolArray";
+    }
+
+    /**
+     * f0 -> "int"
+     * f1 -> "["
+     * f2 -> "]"
+     */
+    public String visit(IntegerArrayType n, String argu) throws Exception {
+        return "intArray";
+    }
+
+    /**
+     * f0 -> "boolean"
+     */
+    public String visit(BooleanType n, String argu) throws Exception {
+        return "bool";
+    }
+
+    /**
+     * f0 -> "int"
+     */
+    public String visit(IntegerType n, String argu) throws Exception {
+        return "int";
     }
 }
