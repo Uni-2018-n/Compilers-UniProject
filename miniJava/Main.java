@@ -54,6 +54,10 @@ public class Main {
         catch(FileNotFoundException ex){
             System.err.println(ex.getMessage());
         }
+        catch(Exception ex){
+            System.err.println(ex.getMessage());
+            System.err.println("failed for "+args[0]);
+        }
         finally{
             try{
                 if(fis != null) fis.close();

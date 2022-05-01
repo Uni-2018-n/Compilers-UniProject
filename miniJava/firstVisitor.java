@@ -20,8 +20,12 @@ public class firstVisitor extends GJDepthFirst<String, String> {
                 if(fields.get(id).containsKey(tempScope)){
                     return fields.get(id).get(tempScope);
                 }else{
-                    int temp = scope.lastIndexOf("::");
-                    tempScope = scope.substring(0, temp);
+                    int temp = tempScope.lastIndexOf("::");
+                    if(temp == -1){
+                        return null;
+                    }
+                    
+                    tempScope = tempScope.substring(0, temp);
                 }
             }
         }

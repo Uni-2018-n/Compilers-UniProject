@@ -56,7 +56,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f5 -> "}"
      */
     public String visit(ClassDeclaration n, String argu) throws Exception {
-        String cID = n.f1.accept(this, argu);
+        String cID = n.f1.accept(this, null);
         n.f4.accept(this, cID);
         return null;
     }
@@ -72,8 +72,8 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f7 -> "}"
      */
     public String visit(ClassExtendsDeclaration n, String argu) throws Exception {
-        String cID = n.f1.accept(this, argu);
-        String cExID = n.f3.accept(this, argu);
+        String cID = n.f1.accept(this, null);
+        String cExID = n.f3.accept(this, null);
         n.f6.accept(this, cExID+"::"+cID);
         return null;
     }
@@ -96,13 +96,12 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(MethodDeclaration n, String argu) throws Exception {
         String _ret=null;
-        String id = n.f2.accept(this, argu);
+        String id = n.f2.accept(this, null);
 //        n.f8.accept(this, argu);
         String ReType = n.f10.accept(this, argu+"::"+id);
         String actualRetType = firstV.lookUp(id, argu+"::"+id);
-//        System.out.println(ReType+"__"+actualRetType);
         if(!ReType.equals(actualRetType)){
-            System.err.println("error method declaration: "+id+" wrong return type");
+            System.err.println("error method declaration: "+id+" wrong return type, given "+ReType+" needed "+actualRetType);
         }
         return _ret;
     }
@@ -115,15 +114,13 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f3 -> ";"
      */
     public String visit(AssignmentStatement n, String argu) throws Exception {
-        String id = n.f0.accept(this, argu);
-        String type = firstV.lookUp(id, argu);
-        String temp = n.f2.accept(this, argu);
-        System.out.println(type+"__"+temp);
-//        if(!type.equals(n.f2.accept(this, argu))){
-//            System.err.println("wrong assign value to "+id+" of type "+ type);
-//        }else{
-//            return type;
-//        }
+        String type = n.f0.accept(this, argu);
+        // String type = firstV.lookUp(id, argu);
+       if(!type.equals(n.f2.accept(this, argu))){
+           System.err.println("wrong assign value to identifier of type "+ type);
+       }else{
+           return type;
+       }
         return null;
     }
 
@@ -149,29 +146,9 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f2 -> Clause()
      */
     public String visit(AndExpression n, String argu) throws Exception {
-        String One = n.f0.accept(this, argu);
-        String Two = n.f2.accept(this, argu);
-        String typeOne;
-        String typeTwo;
-        if(!One.equals("int") && !One.equals("bool")){
-            typeOne = firstV.lookUp(One, argu);
-            if(typeOne == null){
-                System.err.println("error "+One+" not found");
-                throw new Exception("error "+One+" not found");
-            }
-        }else{
-            typeOne = One;
-        }
-
-        if(!Two.equals("int") && !Two.equals("bool")){
-            typeTwo = firstV.lookUp(Two, argu);
-            if(typeTwo == null){
-                System.err.println("error "+Two+" not found");
-                throw new Exception("error "+Two+" not found");
-            }
-        }else{
-            typeTwo = Two;
-        }
+        String typeOne = n.f0.accept(this, argu);
+        String typeTwo = n.f2.accept(this, argu);
+        
 
         if(typeOne.equals("bool") && typeTwo.equals("bool")){
             return "bool";
@@ -217,30 +194,9 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f2 -> PrimaryExpression()
      */
     public String visit(CompareExpression n, String argu) throws Exception {
-        String One = n.f0.accept(this, argu);
-        String Two = n.f2.accept(this, argu);
-        String typeOne;
-        String typeTwo;
-        if(!One.equals("int") && !One.equals("bool")){
-            typeOne = firstV.lookUp(One, argu);
-            if(typeOne == null){
-                System.err.println("error "+One+" not found");
-                throw new Exception("error "+One+" not found");
-            }
-        }else{
-            typeOne = One;
-        }
-
-        if(!Two.equals("int") && !Two.equals("bool")){
-            typeTwo = firstV.lookUp(Two, argu);
-            if(typeTwo == null){
-                System.err.println("error "+Two+" not found");
-                throw new Exception("error "+Two+" not found");
-            }
-        }else{
-            typeTwo = Two;
-        }
-
+        String typeOne = n.f0.accept(this, argu);
+        String typeTwo = n.f2.accept(this, argu);
+       
         if(typeOne.equals("int") && typeTwo.equals("int")){
             return "bool";
         }else{
@@ -255,29 +211,8 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f2 -> PrimaryExpression()
      */
     public String visit(PlusExpression n, String argu) throws Exception {
-        String One = n.f0.accept(this, argu);
-        String Two = n.f2.accept(this, argu);
-        String typeOne;
-        String typeTwo;
-        if(!One.equals("int") && !One.equals("bool")){
-            typeOne = firstV.lookUp(One, argu);
-            if(typeOne == null){
-                System.err.println("error "+One+" not found");
-                throw new Exception("error "+One+" not found");
-            }
-        }else{
-            typeOne = One;
-        }
-
-        if(!Two.equals("int") && !Two.equals("bool")){
-            typeTwo = firstV.lookUp(Two, argu);
-            if(typeTwo == null){
-                System.err.println("error "+Two+" not found");
-                throw new Exception("error "+Two+" not found");
-            }
-        }else{
-            typeTwo = Two;
-        }
+        String typeOne = n.f0.accept(this, argu);
+        String typeTwo = n.f2.accept(this, argu);
 
         if(typeOne.equals("int") && typeTwo.equals("int")){
             return "int";
@@ -293,34 +228,13 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f2 -> PrimaryExpression()
      */
     public String visit(MinusExpression n, String argu) throws Exception {
-        String One = n.f0.accept(this, argu);
-        String Two = n.f2.accept(this, argu);
-        String typeOne;
-        String typeTwo;
-        if(!One.equals("int") && !One.equals("bool")){
-            typeOne = firstV.lookUp(One, argu);
-            if(typeOne == null){
-                System.err.println("error "+One+" not found");
-                throw new Exception("error "+One+" not found");
-            }
-        }else{
-            typeOne = One;
-        }
-
-        if(!Two.equals("int") && !Two.equals("bool")){
-            typeTwo = firstV.lookUp(Two, argu);
-            if(typeTwo == null){
-                System.err.println("error "+Two+" not found");
-                throw new Exception("error "+Two+" not found");
-            }
-        }else{
-            typeTwo = Two;
-        }
-
+        String typeOne = n.f0.accept(this, argu);
+        String typeTwo = n.f2.accept(this, argu);
+        
         if(typeOne.equals("int") && typeTwo.equals("int")){
             return "int";
         }else{
-            System.err.println("error (+) expression");
+            System.err.println("error (-) expression");
         }
         return null;
     }
@@ -331,34 +245,13 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f2 -> PrimaryExpression()
      */
     public String visit(TimesExpression n, String argu) throws Exception {
-        String One = n.f0.accept(this, argu);
-        String Two = n.f2.accept(this, argu);
-        String typeOne;
-        String typeTwo;
-        if(!One.equals("int") && !One.equals("bool")){
-            typeOne = firstV.lookUp(One, argu);
-            if(typeOne == null){
-                System.err.println("error "+One+" not found");
-                throw new Exception("error "+One+" not found");
-            }
-        }else{
-            typeOne = One;
-        }
-
-        if(!Two.equals("int") && !Two.equals("bool")){
-            typeTwo = firstV.lookUp(Two, argu);
-            if(typeTwo == null){
-                System.err.println("error "+Two+" not found");
-                throw new Exception("error "+Two+" not found");
-            }
-        }else{
-            typeTwo = Two;
-        }
+        String typeOne = n.f0.accept(this, argu);
+        String typeTwo = n.f2.accept(this, argu);
 
         if(typeOne.equals("int") && typeTwo.equals("int")){
             return "int";
         }else{
-            System.err.println("error (+) expression");
+            System.err.println("error (*) expression");
         }
         return null;
     }
@@ -370,29 +263,9 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f3 -> "]"
      */
     public String visit(ArrayLookup n, String argu) throws Exception {
-        String One = n.f0.accept(this, argu);
-        String Two = n.f2.accept(this, argu);
-        String typeOne;
-        String typeTwo;
-        if(!One.equals("int") && !One.equals("bool")){
-            typeOne = firstV.lookUp(One, argu);
-            if(typeOne == null){
-                System.err.println("error "+One+" not found");
-                throw new Exception("error "+One+" not found");
-            }
-        }else{
-            typeOne = One;
-        }
-
-        if(!Two.equals("int") && !Two.equals("bool")){
-            typeTwo = firstV.lookUp(Two, argu);
-            if(typeTwo == null){
-                System.err.println("error "+Two+" not found");
-                throw new Exception("error "+Two+" not found");
-            }
-        }else{
-            typeTwo = Two;
-        }
+        String typeOne = n.f0.accept(this, argu);
+        String typeTwo = n.f2.accept(this, argu);
+        
         if(typeOne.contains("Array")){
             if(typeTwo.equals("int")){
                 return typeOne.substring(0, typeOne.indexOf("Array"));
@@ -400,7 +273,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
                 System.err.println("error array iteration must be with integer");
             }
         }else{
-            System.err.println("error "+One+" is not an array");
+            System.err.println("error "+typeOne+" is not an array");
         }
         return null;
     }
@@ -411,22 +284,12 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f2 -> "length"
      */
     public String visit(ArrayLength n, String argu) throws Exception {
-        String One = n.f0.accept(this, argu);
-        String typeOne;
-        if(!One.equals("int") && !One.equals("bool")){
-            typeOne = firstV.lookUp(One, argu);
-            if(typeOne == null){
-                System.err.println("error "+One+" not found");
-                throw new Exception("error "+One+" not found");
-            }
-        }else{
-            typeOne = One;
-        }
-
+        String typeOne = n.f0.accept(this, argu);
+        
         if(typeOne.contains("Array")){
             return "int";
         }else{
-            System.err.println("error "+One+" is not an array");
+            System.err.println("error "+typeOne+" is not an array");
         }
         return null;
     }
@@ -440,17 +303,21 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f5 -> ")"
      */
     public String visit(MessageSend n, String argu) throws Exception {
-        String id = n.f0.accept(this, argu);
-        String funcID = n.f2.accept(this, argu);
-
-        String idType = firstV.lookUp(id, argu);
-        if(!idType.equals("int") && !idType.equals("bool")){
+        String idType = n.f0.accept(this, argu);
+        
+        if(!idType.equals("int") && !idType.equals("bool") && !idType.equals("boolArray") && !idType.equals("intArray")){
             String idHistory = firstV.classes.get(idType);
+            if(!idHistory.isEmpty()){
+                idHistory = idHistory+"::"+idType;
+            }else{
+                idHistory = idType;
+            }
+            String funcID = n.f2.accept(this, null);
             String funcReturnType = firstV.lookUp(funcID, idHistory);
             n.f4.accept(this, idHistory+"::"+funcID);
             return funcReturnType;
         }else{
-            System.err.println("error " + id+" dosent have functions to call");
+            System.err.println("error identifier dosent have functions to call");
         }
 
         return null;
@@ -525,15 +392,23 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f0 -> <IDENTIFIER>
      */
     public String visit(Identifier n, String argu) throws Exception {
+        if(argu != null){
+            String temp = firstV.lookUp(n.f0.tokenImage, argu);
+            if(temp == null){
+                System.err.println("cant find variable "+ n.f0.tokenImage+" in the scope "+argu);
+                throw new Exception();
+            }
+            return temp;
+        }
         return n.f0.tokenImage;
     }
 
-    /**
-     * f0 -> "this"
-     */
-    public String visit(ThisExpression n, String argu) throws Exception {
-        return n.f0.accept(this, argu);
-    }
+    // /** TODO
+    //  * f0 -> "this"
+    //  */
+    // public String visit(ThisExpression n, String argu) throws Exception {
+    //     return n.f0.accept(this, argu);
+    // }
 
     /**
      * f0 -> BooleanArrayAllocationExpression()
@@ -551,7 +426,11 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f4 -> "]"
      */
     public String visit(BooleanArrayAllocationExpression n, String argu) throws Exception {
-        return "bool";
+        String expre = n.f3.accept(this, argu);
+        if(!expre.equals("int")){
+            System.err.println("error array size not an integer");
+        }
+        return "boolArray";
     }
 
     /**
@@ -562,7 +441,11 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f4 -> "]"
      */
     public String visit(IntegerArrayAllocationExpression n, String argu) throws Exception {
-        return "int";
+        String expre = n.f3.accept(this, argu);
+        if(!expre.equals("int")){
+            System.err.println("error array size not an integer");
+        }
+        return "intArray";
     }
 
     /**
@@ -572,7 +455,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f3 -> ")"
      */
     public String visit(AllocationExpression n, String argu) throws Exception {
-        return n.f1.accept(this, argu);
+        return n.f1.accept(this, null);
     }
 
     /**
@@ -581,10 +464,6 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f2 -> ")"
      */
     public String visit(BracketExpression n, String argu) throws Exception {
-        String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        return _ret;
+        return n.f1.accept(this, argu);
     }
 }
