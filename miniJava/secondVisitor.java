@@ -406,7 +406,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
             }
             String funcID = n.f2.accept(this, null);
             String funcReturnType = firstV.lookUp(funcID, idHistory);
-            n.f4.accept(this, idHistory+"::"+funcID);
+            n.f4.accept(this, idHistory+"::"+funcID+"/+/"+argu);
             return funcReturnType;
         }else{
             System.err.println("error identifier dosent have functions to call");
@@ -420,15 +420,18 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f1 -> ExpressionTail()
      */
     public String visit(ExpressionList n, String argu) throws Exception {
-        int temp = argu.lastIndexOf("::");
-        String funcClass = argu.substring(0, temp);
-        String funcID = argu.substring(temp+2, argu.length());
+        String funcArg = argu.substring(0, argu.lastIndexOf("/+/"));
+        String paramsArg = argu.substring(argu.lastIndexOf("/+/")+3);
+
+        int temp = funcArg.lastIndexOf("::");
+        String funcClass = funcArg.substring(0, temp);
+        String funcID = funcArg.substring(temp+2, funcArg.length());
         ArrayList<String> actualParams = firstV.functions.get(funcID).get(funcClass);
 
         ArrayList<String> params = new ArrayList<String>();
-        params.add(n.f0.accept(this, argu));
+        params.add(n.f0.accept(this, paramsArg));
         for(Node i : n.f1.f0.nodes){
-            params.add(i.accept(this, argu));
+            params.add(i.accept(this, paramsArg));
         }
 
         if(actualParams.size() == params.size()){
