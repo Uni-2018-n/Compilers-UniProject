@@ -97,7 +97,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(MethodDeclaration n, String argu) throws Exception {
         String _ret=null;
         String id = n.f2.accept(this, null);
-//        n.f8.accept(this, argu);
+        n.f8.accept(this, argu+"::"+id);
         String ReType = n.f10.accept(this, argu+"::"+id);
         String actualRetType = firstV.lookUp(id, argu+"::"+id);
         if(!ReType.equals(actualRetType)){
@@ -123,6 +123,98 @@ public class secondVisitor extends GJDepthFirst<String, String> {
        }
         return null;
     }
+
+    /**
+    * f0 -> Identifier()
+    * f1 -> "["
+    * f2 -> Expression()
+    * f3 -> "]"
+    * f4 -> "="
+    * f5 -> Expression()
+    * f6 -> ";"
+    */
+   public String visit(ArrayAssignmentStatement n, String argu) throws Exception {
+    String type = n.f0.accept(this, argu);
+    String iterator = n.f2.accept(this, argu);
+    String assignment = n.f5.accept(this, argu);
+    if(type.contains("Array")){
+        if(iterator.equals("int")){
+            if(assignment.equals("int")){
+                if(type.contains("int")){
+                    return "int";
+                }else{
+                    System.err.println("error trying to assign data into an array ");
+                }
+            }else if(assignment.equals("bool")){
+                if(type.contains("bool")){
+                    return "bool";
+                }else{
+                    System.err.println("error trying to assign data into an array ");
+                }
+            }else{
+                System.err.println("error array assignment dont know what type the array is");
+            }
+        }else{
+            System.err.println("error arrays can be iterated only with integers");
+        }
+    }else{
+        System.err.println("error identifier is not an array");
+    }
+    
+    return null;
+ }
+
+     /**
+    * f0 -> "if"
+    * f1 -> "("
+    * f2 -> Expression()
+    * f3 -> ")"
+    * f4 -> Statement()
+    * f5 -> "else"
+    * f6 -> Statement()
+    */
+    public String visit(IfStatement n, String argu) throws Exception {
+        String condType = n.f2.accept(this, argu);
+        if(!condType.equals("bool")){
+            System.err.println("error if condition must be boolean");
+        }
+        n.f4.accept(this, argu);
+        n.f6.accept(this, argu);
+        return null;
+    }
+
+    /**
+    * f0 -> "while"
+    * f1 -> "("
+    * f2 -> Expression()
+    * f3 -> ")"
+    * f4 -> Statement()
+    */
+    public String visit(WhileStatement n, String argu) throws Exception {
+        String condType = n.f2.accept(this, argu);
+        if(!condType.equals("bool")){
+            System.err.println("error while condition must be boolean");
+        }
+        n.f4.accept(this, argu);
+        return null;
+    }
+
+    /**
+    * f0 -> "System.out.println"
+    * f1 -> "("
+    * f2 -> Expression()
+    * f3 -> ")"
+    * f4 -> ";"
+    */
+   public String visit(PrintStatement n, String argu) throws Exception {
+    String expr = n.f2.accept(this, argu);
+    if(!expr.equals("int")){
+        System.err.println("error print statement accepts only integers");
+    }
+    return null;
+ }
+
+     
 
     /**
      * f0 -> AndExpression()
@@ -334,7 +426,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         ArrayList<String> actualParams = firstV.functions.get(funcID).get(funcClass);
 
         ArrayList<String> params = new ArrayList<String>();
-        params.add(n.f0.accept(this, null));
+        params.add(n.f0.accept(this, argu));
         for(Node i : n.f1.f0.nodes){
             params.add(i.accept(this, argu));
         }

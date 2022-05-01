@@ -1,10 +1,15 @@
 class Example {
     public static void main(String[] args) {
         A test;
-        int second;
+        int[] second;
+        boolean third;
+        third = true;
 
-        test = new A();
-        second = test.foo(5, 5);
+        second = new int[5];
+        second[0] = 5+5;
+
+        // test = new A();
+        // second = test.foo(5, 5);
         // second = test.bar();
         // second = 1-true;
         // second = 1*1;
