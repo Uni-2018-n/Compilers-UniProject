@@ -12,6 +12,27 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         firstV = f;
     }
 
+    public boolean isSubClass(String type, String id){
+        String checkExt = firstV.classesLookup(id);
+        if(checkExt != null && !checkExt.equals("")){
+            while(true){
+                if(checkExt.lastIndexOf("::") != -1){
+                    String checkTemp = checkExt.substring(checkExt.lastIndexOf("::"));
+                    if(type.equals(checkTemp)){
+                        return true;
+                    }
+                    checkExt = checkExt.substring(0, checkExt.lastIndexOf("::"));
+                }else{
+                    break;
+                }
+            }
+        }
+        if(type.equals(checkExt)){
+            return true;
+        }
+        return false;
+    }
+
     /**
      * f0 -> "class"
      * f1 -> Identifier()
@@ -118,6 +139,9 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         // String type = firstV.lookUp(id, argu);
         String temp = n.f2.accept(this, argu);
        if(!type.equals(temp)){
+           if(isSubClass(type, temp)){
+               return type;
+           }
            System.err.println("wrong assign value to identifier of type "+ type);
        }else{
            return type;
@@ -449,8 +473,10 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         if(actualParams.size() == params.size()){
             for(int i=0;i<actualParams.size();i++){
                 if(!actualParams.get(i).equals(params.get(i)) ){
-                    System.err.println("wrong type parameters given for "+ funcID);
-                    break;
+                    if(!isSubClass(actualParams.get(i), params.get(i))){
+                        System.err.println("wrong type parameters given for "+ funcID);
+                        break;
+                    }
                 }
             }
         }else{

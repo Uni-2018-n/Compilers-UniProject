@@ -19,11 +19,12 @@ class Example {
 
 class A {
     int i;
-   A a;
+   B a;
 
     public int foo(int i, int j) {
-        A k;
-        k = this;
+        B k;
+        k= new B();
+        i = k.foobar(a);
         return i+j;
     }
    public int bar(){ return i; }
@@ -37,10 +38,10 @@ class B extends A {
     //    k = this.a.bar();
        return i+j;
    }
-   public int foobar(boolean k){ 
-       int p;
-       p = this.bar();
-       p = this.foo(5,5);
+   public int foobar(A k){ 
+    //    int p;
+    //    p = this.bar();
+    //    p = this.foo(5,5);
        return 1; 
     }
 }
