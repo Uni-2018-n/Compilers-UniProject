@@ -32,6 +32,32 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         return null;
     }
 
+    public String classesLookup(String id){
+        while(true){
+            if(id.lastIndexOf("::") != -1){
+                String temp = id.substring(id.lastIndexOf("::"));
+                if(classes.containsKey(temp)){
+                    if(!classes.get(temp).equals("")){
+                        return classes.get(temp)+"::"+temp;
+                    }else{
+                        return temp;
+                    }
+                }
+                id=id.substring(0, id.lastIndexOf("::"));
+            }else{
+                if(classes.containsKey(id)){
+                    if(!classes.get(id).equals("")){
+                        return classes.get(id)+"::"+id;
+                    }else{
+                        return id;
+                    }
+                }else{
+                    return null;
+                }
+            }
+        }
+    }
+
 
     /**
      * f0 -> "class"

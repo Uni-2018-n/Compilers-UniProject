@@ -116,7 +116,8 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(AssignmentStatement n, String argu) throws Exception {
         String type = n.f0.accept(this, argu);
         // String type = firstV.lookUp(id, argu);
-       if(!type.equals(n.f2.accept(this, argu))){
+        String temp = n.f2.accept(this, argu);
+       if(!type.equals(temp)){
            System.err.println("wrong assign value to identifier of type "+ type);
        }else{
            return type;
@@ -241,7 +242,6 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         String typeOne = n.f0.accept(this, argu);
         String typeTwo = n.f2.accept(this, argu);
         
-
         if(typeOne.equals("bool") && typeTwo.equals("bool")){
             return "bool";
         }else{
@@ -255,6 +255,10 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      *       | PrimaryExpression()
      */
     public String visit(Clause n, String argu) throws Exception {
+        String temp = n.f0.accept(this, argu);
+        if(temp.equals("this")){
+            return "this";
+        }
         return n.f0.accept(this, argu);
     }
 
@@ -271,12 +275,21 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      *       | TrueLiteral()
      *       | FalseLiteral()
      *       | Identifier()
-     *       | ThisExpression()  --:TODO
+     *       | ThisExpression()
      *       | ArrayAllocationExpression()
      *       | AllocationExpression()
      *       | BracketExpression()
      */
     public String visit(PrimaryExpression n, String argu) throws Exception {
+        String temp = n.f0.accept(this, argu);
+        if(temp.equals("this")){
+            String p = firstV.classesLookup(argu);
+            if(p.lastIndexOf("::") != -1){
+                return p.substring(p.lastIndexOf("::"));
+            }else{
+                return p;
+            }
+        }
         return n.f0.accept(this, argu);
     }
 
@@ -396,13 +409,12 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(MessageSend n, String argu) throws Exception {
         String idType = n.f0.accept(this, argu);
-        
         if(!idType.equals("int") && !idType.equals("bool") && !idType.equals("boolArray") && !idType.equals("intArray")){
-            String idHistory = firstV.classes.get(idType);
-            if(!idHistory.isEmpty()){
-                idHistory = idHistory+"::"+idType;
+            String idHistory;
+            if(idType.equals("this")){
+                idHistory = firstV.classesLookup(argu);
             }else{
-                idHistory = idType;
+                idHistory = firstV.classesLookup(idType);
             }
             String funcID = n.f2.accept(this, null);
             String funcReturnType = firstV.lookUp(funcID, idHistory);
@@ -498,12 +510,12 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         return n.f0.tokenImage;
     }
 
-    // /** TODO
-    //  * f0 -> "this"
-    //  */
-    // public String visit(ThisExpression n, String argu) throws Exception {
-    //     return n.f0.accept(this, argu);
-    // }
+    /**
+     * f0 -> "this"
+     */
+    public String visit(ThisExpression n, String argu) throws Exception {
+        return "this";
+    }
 
     /**
      * f0 -> BooleanArrayAllocationExpression()
