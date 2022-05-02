@@ -95,7 +95,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(ClassExtendsDeclaration n, String argu) throws Exception {
         String cID = n.f1.accept(this, null);
         String cExID = n.f3.accept(this, null);
-        n.f6.accept(this, cExID+"::"+cID);
+        n.f6.accept(this, firstV.classesLookup(cExID)+"::"+cID);
         return null;
     }
 
