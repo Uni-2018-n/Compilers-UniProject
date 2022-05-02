@@ -24,27 +24,27 @@ public class Main {
     
                 Goal root = parser.Goal();
     
-                System.err.println("Program parsed successfully.");
+                System.out.println("Program parsed successfully.");
     
                 firstVisitor eval = new firstVisitor();
                 root.accept(eval, null);
                 
-                // for (String i : eval.fields.keySet()) {
-                //     System.out.print(i+"->{");
-                //     for(String j : eval.fields.get(i).keySet()){
-                //         System.out.print(j+"("+eval.fields.get(i).get(j)+"), ");
-                //     }
-                //     System.out.println("}");
-                // }
-                // System.out.println("Functions:");
-                // for (String i : eval.functions.keySet()) {
-                //     System.out.print(i+"->{");
-                //     for(String j : eval.functions.get(i).keySet()){
-                //         System.out.print(j+"("+eval.functions.get(i).get(j)+"), ");
-                //     }
-                //     System.out.println("}");
-                // }
-                // System.out.println("First part DONE:");
+                for (String i : eval.fields.keySet()) {
+                    System.out.print(i+"->{");
+                    for(String j : eval.fields.get(i).keySet()){
+                        System.out.print(j+"("+eval.fields.get(i).get(j)+"), ");
+                    }
+                    System.out.println("}");
+                }
+                System.out.println("Functions:");
+                for (String i : eval.functions.keySet()) {
+                    System.out.print(i+"->{");
+                    for(String j : eval.functions.get(i).keySet()){
+                        System.out.print(j+"("+eval.functions.get(i).get(j)+"), ");
+                    }
+                    System.out.println("}");
+                }
+                System.out.println("First part DONE:");
     
     
                 secondVisitor secVis = new secondVisitor(eval);
@@ -52,7 +52,7 @@ public class Main {
                 System.out.println(args[pp]+" success");
             }
             catch(ParseException ex){
-                System.out.println(ex.getMessage());
+                System.err.println(ex.getMessage());
             }
             catch(FileNotFoundException ex){
                 System.err.println(ex.getMessage());

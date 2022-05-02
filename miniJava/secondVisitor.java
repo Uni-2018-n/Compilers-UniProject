@@ -122,7 +122,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         String ReType = n.f10.accept(this, argu+"::"+id);
         String actualRetType = firstV.lookUp(id, argu+"::"+id);
         if(!ReType.equals(actualRetType)){
-            System.err.println("error method declaration: "+id+" wrong return type, given "+ReType+" needed "+actualRetType);
+            throw new Exception("error method declaration: "+id+" wrong return type, given "+ReType+" needed "+actualRetType);
         }
         return _ret;
     }
@@ -142,11 +142,10 @@ public class secondVisitor extends GJDepthFirst<String, String> {
            if(isSubClass(type, temp)){
                return type;
            }
-           System.err.println("wrong assign value to identifier of type "+ type);
+           throw new Exception("wrong assign value to identifier of type "+ type);
        }else{
            return type;
        }
-        return null;
     }
 
     /**
@@ -168,25 +167,24 @@ public class secondVisitor extends GJDepthFirst<String, String> {
                 if(type.contains("int")){
                     return "int";
                 }else{
-                    System.err.println("error trying to assign data into an array ");
+                    throw new Exception("error trying to assign data into an array ");
                 }
             }else if(assignment.equals("bool")){
                 if(type.contains("bool")){
                     return "bool";
                 }else{
-                    System.err.println("error trying to assign data into an array ");
+                    throw new Exception("error trying to assign data into an array ");
                 }
             }else{
-                System.err.println("error array assignment dont know what type the array is");
+                throw new Exception("error array assignment dont know what type the array is");
             }
         }else{
-            System.err.println("error arrays can be iterated only with integers");
+            throw new Exception("error arrays can be iterated only with integers");
         }
     }else{
-        System.err.println("error identifier is not an array");
+        throw new Exception("error identifier is not an array");
     }
     
-    return null;
  }
 
      /**
@@ -201,7 +199,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(IfStatement n, String argu) throws Exception {
         String condType = n.f2.accept(this, argu);
         if(!condType.equals("bool")){
-            System.err.println("error if condition must be boolean");
+            throw new Exception("error if condition must be boolean");
         }
         n.f4.accept(this, argu);
         n.f6.accept(this, argu);
@@ -218,7 +216,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(WhileStatement n, String argu) throws Exception {
         String condType = n.f2.accept(this, argu);
         if(!condType.equals("bool")){
-            System.err.println("error while condition must be boolean");
+            throw new Exception("error while condition must be boolean");
         }
         n.f4.accept(this, argu);
         return null;
@@ -234,7 +232,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
    public String visit(PrintStatement n, String argu) throws Exception {
     String expr = n.f2.accept(this, argu);
     if(!expr.equals("int")){
-        System.err.println("error print statement accepts only integers");
+        throw new Exception("error print statement accepts only integers");
     }
     return null;
  }
@@ -269,9 +267,8 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         if(typeOne.equals("bool") && typeTwo.equals("bool")){
             return "bool";
         }else{
-            System.err.println("error (&&) expression");
+            throw new Exception("error (&&) expression");
         }
-        return null;
     }
 
     /**
@@ -329,9 +326,8 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         if(typeOne.equals("int") && typeTwo.equals("int")){
             return "bool";
         }else{
-            System.err.println("error (<) expression");
+            throw new Exception("error (<) expression");
         }
-        return null;
     }
 
     /**
@@ -346,9 +342,8 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         if(typeOne.equals("int") && typeTwo.equals("int")){
             return "int";
         }else{
-            System.err.println("error (+) expression");
+            throw new Exception("error (+) expression");
         }
-        return null;
     }
 
     /**
@@ -363,9 +358,8 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         if(typeOne.equals("int") && typeTwo.equals("int")){
             return "int";
         }else{
-            System.err.println("error (-) expression");
+            throw new Exception("error (-) expression");
         }
-        return null;
     }
 
     /**
@@ -380,9 +374,8 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         if(typeOne.equals("int") && typeTwo.equals("int")){
             return "int";
         }else{
-            System.err.println("error (*) expression");
+            throw new Exception("error (*) expression");
         }
-        return null;
     }
 
     /**
@@ -399,12 +392,11 @@ public class secondVisitor extends GJDepthFirst<String, String> {
             if(typeTwo.equals("int")){
                 return typeOne.substring(0, typeOne.indexOf("Array"));
             }else {
-                System.err.println("error array iteration must be with integer");
+                throw new Exception("error array iteration must be with integer");
             }
         }else{
-            System.err.println("error "+typeOne+" is not an array");
+            throw new Exception("error "+typeOne+" is not an array");
         }
-        return null;
     }
 
     /**
@@ -418,9 +410,8 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         if(typeOne.contains("Array")){
             return "int";
         }else{
-            System.err.println("error "+typeOne+" is not an array");
+            throw new Exception("error "+typeOne+" is not an array");
         }
-        return null;
     }
 
     /**
@@ -445,10 +436,9 @@ public class secondVisitor extends GJDepthFirst<String, String> {
             n.f4.accept(this, idHistory+"::"+funcID+"/+/"+argu);
             return funcReturnType;
         }else{
-            System.err.println("error identifier dosent have functions to call");
+            throw new Exception("error identifier dosent have functions to call");
         }
 
-        return null;
     }
 
     /**
@@ -474,13 +464,12 @@ public class secondVisitor extends GJDepthFirst<String, String> {
             for(int i=0;i<actualParams.size();i++){
                 if(!actualParams.get(i).equals(params.get(i)) ){
                     if(!isSubClass(actualParams.get(i), params.get(i))){
-                        System.err.println("wrong type parameters given for "+ funcID);
-                        break;
+                        throw new Exception("wrong type parameters given for "+ funcID);
                     }
                 }
             }
         }else{
-            System.err.println("wrong type parameters given for "+ funcID);
+            throw new Exception("wrong type parameters given for "+ funcID);
         }
         return null;
     }
@@ -528,8 +517,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         if(argu != null){
             String temp = firstV.lookUp(n.f0.tokenImage, argu);
             if(temp == null){
-                System.err.println("cant find variable "+ n.f0.tokenImage+" in the scope "+argu);
-                throw new Exception();
+                throw new Exception("cant find variable "+ n.f0.tokenImage+" in the scope "+argu);
             }
             return temp;
         }
@@ -561,7 +549,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(BooleanArrayAllocationExpression n, String argu) throws Exception {
         String expre = n.f3.accept(this, argu);
         if(!expre.equals("int")){
-            System.err.println("error array size not an integer");
+            throw new Exception("error array size not an integer");
         }
         return "boolArray";
     }
@@ -576,7 +564,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(IntegerArrayAllocationExpression n, String argu) throws Exception {
         String expre = n.f3.accept(this, argu);
         if(!expre.equals("int")){
-            System.err.println("error array size not an integer");
+            throw new Exception("error array size not an integer");
         }
         return "intArray";
     }

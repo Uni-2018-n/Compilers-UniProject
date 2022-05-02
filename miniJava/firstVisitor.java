@@ -149,7 +149,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
             fields.get(id).put(argu, type);
         }else{
             if(fields.get(id).containsKey(argu)){
-                System.out.println("error multiple same-id variables");
+                throw new Exception("error multiple same-id variables");
             }else{
                 fields.get(id).put(argu, type);
             }
@@ -182,7 +182,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
             fields.get(id).put(argu, type);
         }else{
             if(fields.get(id).containsKey(argu)){
-                System.out.println("error multiple same-id variables/methods");
+                throw new Exception("error multiple same-id variables/methods");
             }else{
                 fields.get(id).put(argu, type);
             }
@@ -202,15 +202,18 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         String path = argu.substring(0, argu.lastIndexOf("::"));
 
         ArrayList<String> nodes = new ArrayList<String>();
-        nodes.add(n.f0.accept(this, argu));
+        String curr = n.f0.accept(this, argu);
+        nodes.add(curr);
         for(Node i : n.f1.f0.nodes){
-            nodes.add(i.accept(this, argu));
+            curr = i.accept(this, argu);
+            nodes.add(curr);
+
         }
 
 
         if(functions.containsKey(id)){
             if(functions.get(id).containsKey(path)){
-                System.out.println("error multiple same-id methods");
+                throw new Exception("error multiple same-id methods");
             }else{
                 functions.get(id).put(path, nodes);
             }
@@ -233,7 +236,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
 
         if(fields.containsKey(id)){
             if(fields.get(id).containsKey(argu)){
-                System.out.println("function "+argu+" has multiple " + id);
+                throw new Exception("function "+argu+" has multiple " + id);
             }else{
                 fields.get(id).put(argu, type);
             }
