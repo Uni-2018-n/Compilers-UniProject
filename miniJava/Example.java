@@ -1,6 +1,7 @@
 class Example {
     public static void main(String[] x) {
-        boolean b;
+        // C b;
+        // b= new C();
         // b = test.reset();
     }
 }

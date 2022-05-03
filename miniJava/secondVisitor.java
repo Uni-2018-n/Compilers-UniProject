@@ -66,6 +66,13 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         }
     }
 
+    public boolean typeExists(String type){
+        if(type.equals("int") || type.equals("bool") || type.equals("intArray") || type.equals("boolArray") || firstV.classesLookup(type) != null){
+            return true;
+        }
+        return false;
+    }
+
     /**
      * f0 -> "class"
      * f1 -> Identifier()
@@ -88,8 +95,22 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(MainClass n, String argu) throws Exception {
         String cID = n.f1.accept(this, null);
+        n.f14.accept(this, null);
 //        System.out.println(firstV.classes.get(cID)+cID);
         n.f15.accept(this, firstV.classes.get(cID)+cID+"::main");
+        return null;
+    }
+
+    /**
+    * f0 -> Type()
+    * f1 -> Identifier()
+    * f2 -> ";"
+    */
+    public String visit(VarDeclaration n, String argu) throws Exception {
+        String type =n.f0.accept(this, null);
+        if(!typeExists(type)){
+            throw new Exception("error type: "+type+" isnt a valid type");
+        }
         return null;
     }
 
@@ -111,6 +132,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(ClassDeclaration n, String argu) throws Exception {
         String cID = n.f1.accept(this, null);
+        n.f3.accept(this, null);
         n.f4.accept(this, cID);
         return null;
     }
@@ -128,6 +150,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(ClassExtendsDeclaration n, String argu) throws Exception {
         String cID = n.f1.accept(this, null);
         String cExID = n.f3.accept(this, null);
+        n.f5.accept(this, null);
         n.f6.accept(this, firstV.classesLookup(cExID)+"::"+cID);
         return null;
     }
@@ -151,6 +174,9 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(MethodDeclaration n, String argu) throws Exception {
         String _ret=null;
         String type = n.f1.accept(this, null);
+        if(!typeExists(type)){
+            throw new Exception("error type: "+type+" isnt a valid type");
+        }
         String id = n.f2.accept(this, null);
 
         if(argu.lastIndexOf("::") != -1){
@@ -161,6 +187,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         }
 
         n.f4.accept(this, argu+"::"+id);
+        n.f7.accept(this, null);
         n.f8.accept(this, argu+"::"+id);
         String ReType = n.f10.accept(this, argu+"::"+id);
         String actualRetType = firstV.lookUp(id, argu+"::"+id);
@@ -199,6 +226,9 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(FormalParameter n, String argu) throws Exception {
         String type = n.f0.accept(this, null);
+        if(!typeExists(type)){
+            throw new Exception("error type: "+type+" isnt a valid type");
+        }
         return type;
     }
 
