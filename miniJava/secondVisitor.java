@@ -4,6 +4,8 @@ import visitor.GJDepthFirst;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import javax.print.DocFlavor.STRING;
+
 
 public class secondVisitor extends GJDepthFirst<String, String> {
     firstVisitor firstV;
@@ -31,6 +33,37 @@ public class secondVisitor extends GJDepthFirst<String, String> {
             return true;
         }
         return false;
+    }
+
+    public boolean hasSameParametersWithSuper(String id, String scope, ArrayList<String> currParams){
+        while(true){
+            if(scope.lastIndexOf("::") != -1){
+                scope = scope.substring(0, scope.lastIndexOf("::"));
+                if(firstV.functions.containsKey(id)){
+                    if(firstV.functions.get(id).containsKey(scope)){
+                        ArrayList<String> params = firstV.functions.get(id).get(scope);
+
+                        if(currParams.size() == params.size()){
+                            for(int i=0;i<currParams.size();i++){
+                                if(currParams.get(i) != params.get(i)){
+                                    return false;
+                                }
+                            }
+                            
+                            return true;
+                        }
+
+                    }else{
+                        return true;
+                    }
+
+                }else{
+                    return true;
+                }
+            }else{
+                return true;
+            }
+        }
     }
 
     /**
@@ -117,7 +150,17 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(MethodDeclaration n, String argu) throws Exception {
         String _ret=null;
+        String type = n.f1.accept(this, null);
         String id = n.f2.accept(this, null);
+
+        if(argu.lastIndexOf("::") != -1){
+            String tempType = firstV.lookUp(id, argu.substring(0, argu.lastIndexOf("::")));
+            if(tempType != null && !tempType.equals(type)){
+                throw new Exception("error method declaration has diffrent return type from super");
+            }
+        }
+
+        n.f4.accept(this, argu+"::"+id);
         n.f8.accept(this, argu+"::"+id);
         String ReType = n.f10.accept(this, argu+"::"+id);
         String actualRetType = firstV.lookUp(id, argu+"::"+id);
@@ -125,6 +168,85 @@ public class secondVisitor extends GJDepthFirst<String, String> {
             throw new Exception("error method declaration: "+id+" wrong return type, given "+ReType+" needed "+actualRetType);
         }
         return _ret;
+    }
+
+    /**
+     * f0 -> FormalParameter()
+     * f1 -> FormalParameterTail()
+     */
+    public String visit(FormalParameterList n, String argu) throws Exception {
+        String id = argu.substring(argu.lastIndexOf("::")+2, argu.length());
+        String path = argu.substring(0, argu.lastIndexOf("::"));
+
+        ArrayList<String> nodes = new ArrayList<String>();
+        String curr = n.f0.accept(this, argu);
+        nodes.add(curr);
+        for(Node i : n.f1.f0.nodes){
+            curr = i.accept(this, argu);
+            nodes.add(curr);
+
+        }
+        if(!hasSameParametersWithSuper(id, path, nodes)){
+            throw new Exception("error method is overloading a super method with diffrent parameters");
+        }
+
+        return null;
+    }
+
+    /**
+     * f0 -> Type()
+     * f1 -> Identifier()
+     */
+    public String visit(FormalParameter n, String argu) throws Exception {
+        String type = n.f0.accept(this, null);
+        return type;
+    }
+
+    /**
+     * f0 -> "boolean"
+     * f1 -> "["
+     * f2 -> "]"
+     */
+    public String visit(BooleanArrayType n, String argu) throws Exception {
+        return "boolArray";
+    }
+
+    /**
+     * f0 -> "int"
+     * f1 -> "["
+     * f2 -> "]"
+     */
+    public String visit(IntegerArrayType n, String argu) throws Exception {
+        return "intArray";
+    }
+
+    /**
+     * f0 -> "boolean"
+     */
+    public String visit(BooleanType n, String argu) throws Exception {
+        return "bool";
+    }
+
+    /**
+     * f0 -> "int"
+     */
+    public String visit(IntegerType n, String argu) throws Exception {
+        return "int";
+    }
+
+    /**
+     * f0 -> ( FormalParameterTerm() )*
+     */
+    public String visit(FormalParameterTail n, String argu) throws Exception {
+        return n.f0.accept(this, argu);
+    }
+
+    /**
+     * f0 -> ","
+     * f1 -> FormalParameter()
+     */
+    public String visit(FormalParameterTerm n, String argu) throws Exception {
+        return n.f1.accept(this, argu);
     }
 
 
