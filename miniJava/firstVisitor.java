@@ -126,10 +126,14 @@ public class firstVisitor extends GJDepthFirst<String, String> {
     public String visit(ClassExtendsDeclaration n, String argu) throws Exception {
         String cID = n.f1.accept(this, null);
         String cExID = n.f3.accept(this, null);
-        if(classes.containsKey(cExID) && !classes.get(cExID).equals("")){
-            classes.put(cID, classes.get(cExID)+"::"+cExID);
+        if(classes.containsKey(cExID)){
+            if(!classes.get(cExID).equals("")){
+                classes.put(cID, classes.get(cExID)+"::"+cExID);
+            }else{
+                classes.put(cID, cExID);
+            }
         }else{
-            classes.put(cID, cExID);
+            throw new Exception("class extends undeclared class, classes must be declared in correct order");
         }
         n.f5.accept(this, classes.get(cID)+"::"+cID);
         n.f6.accept(this, classes.get(cID)+"::"+cID);
