@@ -2,23 +2,25 @@ import syntaxtree.*;
 import visitor.GJDepthFirst;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 public class firstVisitor extends GJDepthFirst<String, String> {
     //    HashMap<Pair<String, String>, String> fields = new HashMap<new Pair<String, String>, String> ();
     //className -> fieldName -> type
-    HashMap<String, HashMap<String, String>> fields  = new HashMap<String, HashMap<String, String>>();
+    HashMap<String, HashMap<String, List<String>>> fields  = new HashMap<String, HashMap<String, List<String>>>();
     HashMap<String, String>                  classes = new HashMap<String, String>();
 
     HashMap<String, HashMap<String, ArrayList<String>>> functions  = new HashMap<String, HashMap<String, ArrayList<String>>>();
 
 
-    public String lookUp(String id, String scope){
+    public String lookUp(String id, String scope, int j){
         String tempScope = scope;
         if(fields.containsKey(id)){
             while(true){
                 if(fields.get(id).containsKey(tempScope)){
-                    return fields.get(id).get(tempScope);
+                    return fields.get(id).get(tempScope).get(j);
                 }else{
                     int temp = tempScope.lastIndexOf("::");
                     if(temp == -1){
@@ -58,6 +60,33 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         }
     }
 
+    public void insertField(String id, String scope, String type, int j) throws Exception{
+        if(!fields.containsKey(id)){
+            fields.put(id, new HashMap<String, List<String>>());
+            fields.get(id).put(scope, Arrays.asList(new String[2]));
+            fields.get(id).get(scope).set(j, type);
+        }else{
+            if(fields.get(id).containsKey(scope)){
+                if(j == 0){
+                    if(fields.get(id).get(scope).get(0) != null){
+                        throw new Exception("error multiple same-id variables");
+                    }else{
+                        fields.get(id).get(scope).set(0, type);
+                    }
+                }else{
+                    if(fields.get(id).get(scope).get(1) != null){
+                        throw new Exception("error multiple same-id methods");
+                    }else{
+                        fields.get(id).get(scope).set(1, type);
+                    }
+                }
+            }else{
+                fields.get(id).put(scope, Arrays.asList(new String[2]));
+                fields.get(id).get(scope).set(j, type);
+            }
+        }
+    }
+
 
     /**
      * f0 -> "class"
@@ -83,8 +112,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         String cID = n.f1.accept(this, null);
         String paramID = n.f11.accept(this, null);
         classes.put(cID, "");
-        fields.put(paramID, new HashMap<String, String>());
-        fields.get(paramID).put(cID, "stringArray");
+        insertField(paramID, cID, "stringArray", 0);
         n.f14.accept(this, cID+"::main");
         return null;
     }
@@ -148,16 +176,8 @@ public class firstVisitor extends GJDepthFirst<String, String> {
     public String visit(VarDeclaration n, String argu) throws Exception {
         String type = n.f0.accept(this, null);
         String id= n.f1.accept(this, null);
-        if(!fields.containsKey(id)){
-            fields.put(id, new HashMap<String, String>());
-            fields.get(id).put(argu, type);
-        }else{
-            if(fields.get(id).containsKey(argu)){
-                throw new Exception("error multiple same-id variables");
-            }else{
-                fields.get(id).put(argu, type);
-            }
-        }
+        insertField(id, argu, type, 0);
+
         return null;
     }
 
@@ -180,17 +200,8 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         String type = n.f1.accept(this, null);
         String id = n.f2.accept(this, null);
         n.f4.accept(this, argu+"::"+id);
+        insertField(id, argu, type, 1);
 
-        if(!fields.containsKey(id)){
-            fields.put(id, new HashMap<String, String>());
-            fields.get(id).put(argu, type);
-        }else{
-            if(fields.get(id).containsKey(argu)){
-                throw new Exception("error multiple same-id variables/methods");
-            }else{
-                fields.get(id).put(argu, type);
-            }
-        }
         n.f7.accept(this, argu+"::"+id);
 //        n.f8.accept(this, argu);
 //        n.f10.accept(this, argu);
@@ -237,18 +248,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
     public String visit(FormalParameter n, String argu) throws Exception {
         String type = n.f0.accept(this, null);
         String id = n.f1.accept(this, null);
-
-        if(fields.containsKey(id)){
-            if(fields.get(id).containsKey(argu)){
-                throw new Exception("function "+argu+" has multiple " + id);
-            }else{
-                fields.get(id).put(argu, type);
-            }
-        }else{
-            fields.put(id, new HashMap<String, String>());
-            fields.get(id).put(argu, type);
-        }
-
+        insertField(id, argu, type, 0);
         return type;
     }
 

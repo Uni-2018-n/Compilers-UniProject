@@ -180,7 +180,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         String id = n.f2.accept(this, null);
 
         if(argu.lastIndexOf("::") != -1){
-            String tempType = firstV.lookUp(id, argu.substring(0, argu.lastIndexOf("::")));
+            String tempType = firstV.lookUp(id, argu.substring(0, argu.lastIndexOf("::")), 1);
             if(tempType != null && !tempType.equals(type)){
                 throw new Exception("error method declaration has diffrent return type from super");
             }
@@ -190,7 +190,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         n.f7.accept(this, null);
         n.f8.accept(this, argu+"::"+id);
         String ReType = n.f10.accept(this, argu+"::"+id);
-        String actualRetType = firstV.lookUp(id, argu+"::"+id);
+        String actualRetType = firstV.lookUp(id, argu+"::"+id, 1);
         if(!ReType.equals(actualRetType)){
             throw new Exception("error method declaration: "+id+" wrong return type, given "+ReType+" needed "+actualRetType);
         }
@@ -584,7 +584,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
                 idHistory = firstV.classesLookup(idType);
             }
             String funcID = n.f2.accept(this, null);
-            String funcReturnType = firstV.lookUp(funcID, idHistory);
+            String funcReturnType = firstV.lookUp(funcID, idHistory, 1);
             n.f4.accept(this, idHistory+"::"+funcID+"/+/"+argu);
             return funcReturnType;
         }else{
@@ -667,7 +667,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(Identifier n, String argu) throws Exception {
         if(argu != null){
-            String temp = firstV.lookUp(n.f0.tokenImage, argu);
+            String temp = firstV.lookUp(n.f0.tokenImage, argu, 0);//TODO: check j here
             if(temp == null){
                 throw new Exception("cant find variable "+ n.f0.tokenImage+" in the scope "+argu);
             }
