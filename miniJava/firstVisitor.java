@@ -11,16 +11,16 @@ class pair{
         vars = new LinkedList<offsetItem>();
         functions = new LinkedList<offsetItem>();
     }
-    public void push(String i, int o, int j){
-        if(j ==0){
+    public void push(String i, int o, int j, int initialValue){
+        if(j == 0){
             if(vars.size() == 0){
-                vars.add(new offsetItem(i, 0, o));
+                vars.add(new offsetItem(i, initialValue, initialValue+o));
             }else{
                 vars.add(new offsetItem(i, vars.getLast().size, vars.getLast().size+o));
             }
         }else{
             if(functions.size() == 0){
-                functions.add(new offsetItem(i, 0, o));
+                functions.add(new offsetItem(i, initialValue, initialValue+o));
             }else{
                 functions.add(new offsetItem(i, functions.getLast().size, functions.getLast().size+o));
             }
@@ -37,6 +37,7 @@ class offsetItem {
         id = i;
         myOffset = o;
         size = s;
+//        System.out.println(myOffset + " "+ size);
     }
 }
 
@@ -97,23 +98,23 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         }
     }
 
-    public void offsetPush(String id, String className, String type, int j){
+    public void offsetPush(String id, String className, String type, int j, int initialValue){
         if(!offsets.containsKey(className)){
             offsets.put(className, new pair());
         }
         if(j==1){
-            offsets.get(className).push(id, 8, j);
+            offsets.get(className).push(id, 8, j, initialValue);
             return;
         }
         switch (type){
             case "int":
-                offsets.get(className).push(id, 4, j);
+                offsets.get(className).push(id, 4, j, initialValue);
                 return;
             case "bool":
-                offsets.get(className).push(id, 1, j);
+                offsets.get(className).push(id, 1, j, initialValue);
                 return;
             default:
-                offsets.get(className).push(id, 8, j);
+                offsets.get(className).push(id, 8, j, initialValue);
         }
     }
 
@@ -170,15 +171,51 @@ public class firstVisitor extends GJDepthFirst<String, String> {
                         return;
                     }
                 }
-                offsetPush(id, className, type, j);
+                int initialOffset;
+                if(scope.lastIndexOf("::") == -1){
+                    initialOffset = 0;
+                }else{
+                    while(true){
+                        if(scope.lastIndexOf("::") == -1){
+                            initialOffset = getLastFromSuper(scope, j);
+                            break;
+                        }
+                        String temp = scope.substring(scope.lastIndexOf("::")+2);
+                        scope = scope.substring(0, scope.lastIndexOf("::"));
+                        if(!temp.equals(className)){
+                            initialOffset = getLastFromSuper(temp, j);
+                            break;
+                        }
+                    }
+                }
+//                System.out.println(initialOffset);
+                offsetPush(id, className, type, j, initialOffset);
                 return;
             }else{
-//                System.out.println(className);
                 if(tempScope.lastIndexOf("::") == -1){
                     return;
                 }
             }
         }
+    }
+
+    public int getLastFromSuper(String className, int j){
+        if(offsets.containsKey(className)){
+            if(j==0){
+                if(offsets.get(className).vars.size() != 0){
+                    return (offsets.get(className).vars.getLast().size);
+                }else{
+                    return 0;
+                }
+            }else{
+                if(offsets.get(className).functions.size() != 0){
+                    return offsets.get(className).functions.getLast().size;
+                }else{
+                    return 0;
+                }
+            }
+        }
+        return 0;
     }
 
     public boolean hasSuper(String id, String scope){

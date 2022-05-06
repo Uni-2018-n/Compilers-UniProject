@@ -12,29 +12,17 @@ class Example {
     }
 }
 
-class D {
-
-}
-class A {
-    boolean data;
-    boolean data2;
-    public int foo(int i){
-        return 5;
-    }
-//    public int E(){
-//        return 5;
-//    }
+class A{
+    int i;
+    boolean flag;
+    int j;
+    public int foo() {return 5;}
+    public boolean fa() {return true;}
 }
 
-
-class B extends A {
-//    public int E(int p){
-//        return 5;
-//    }
-    public int foo(int i){
-        return 0;
-    }
-}
-class C extends D{
-    public int foo(){return 0;}
+class B extends A{
+    A type;
+    int k;
+    public int foo() {return 5;}
+    public boolean bla() {return true;}
 }
