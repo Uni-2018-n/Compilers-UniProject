@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -28,22 +29,7 @@ public class Main {
     
                 firstVisitor eval = new firstVisitor();
                 root.accept(eval, null);
-                
-//                for (String i : eval.fields.keySet()) {
-//                    System.out.print(i+"->{");
-//                    for(String j : eval.fields.get(i).keySet()){
-//                        System.out.print(j+"("+eval.fields.get(i).get(j)+"), ");
-//                    }
-//                    System.out.println("}");
-//                }
-//                System.out.println("Functions:");
-//                for (String i : eval.functions.keySet()) {
-//                    System.out.print(i+"->{");
-//                    for(String j : eval.functions.get(i).keySet()){
-//                        System.out.print(j+"("+eval.functions.get(i).get(j)+"), ");
-//                    }
-//                    System.out.println("}");
-//                }
+
 //                System.out.println("First part DONE:");
     
                 secondVisitor secVis = new secondVisitor(eval);

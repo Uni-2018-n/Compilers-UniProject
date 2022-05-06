@@ -26,3 +26,5 @@ class B extends A{
     public int foo() {return 5;}
     public boolean bla() {return true;}
 }
+class C{
+}

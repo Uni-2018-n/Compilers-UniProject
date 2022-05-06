@@ -99,9 +99,6 @@ public class firstVisitor extends GJDepthFirst<String, String> {
     }
 
     public void offsetPush(String id, String className, String type, int j, int initialValue){
-        if(!offsets.containsKey(className)){
-            offsets.put(className, new pair());
-        }
         if(j==1){
             offsets.get(className).push(id, 8, j, initialValue);
             return;
@@ -120,12 +117,16 @@ public class firstVisitor extends GJDepthFirst<String, String> {
 
     public void offsetPrint(){
         for(Map.Entry<String, pair>ite : offsets.entrySet()){
+            System.out.println("-----------Class "+ite.getKey()+"-----------");
+            System.out.println("--Variables---");
             for(int i=0;i<ite.getValue().vars.size();i++){
-                System.out.println(ite.getKey()+"."+ite.getValue().vars.get(i).id+": "+ite.getValue().vars.get(i).myOffset);
+                System.out.println(ite.getKey()+"."+ite.getValue().vars.get(i).id+" : "+ite.getValue().vars.get(i).myOffset);
             }
+            System.out.println("---Methods---");
             for(int i=0;i<ite.getValue().functions.size();i++){
-                System.out.println(ite.getKey()+"."+ite.getValue().functions.get(i).id+": "+ite.getValue().functions.get(i).myOffset);
+                System.out.println(ite.getKey()+"."+ite.getValue().functions.get(i).id+" : "+ite.getValue().functions.get(i).myOffset);
             }
+            System.out.println();
         }
     }
 
@@ -284,6 +285,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
     public String visit(ClassDeclaration n, String argu) throws Exception {
         String cID = n.f1.accept(this, null);
         classes.put(cID, "");
+        offsets.put(cID, new pair());
         n.f3.accept(this, cID);
         n.f4.accept(this, cID);
         return null;
@@ -302,6 +304,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
     public String visit(ClassExtendsDeclaration n, String argu) throws Exception {
         String cID = n.f1.accept(this, null);
         String cExID = n.f3.accept(this, null);
+        offsets.put(cID, new pair());
         if(classes.containsKey(cExID)){
             if(!classes.get(cExID).equals("")){
                 classes.put(cID, classes.get(cExID)+"::"+cExID);
