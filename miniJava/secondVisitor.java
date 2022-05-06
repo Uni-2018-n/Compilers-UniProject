@@ -42,17 +42,17 @@ public class secondVisitor extends GJDepthFirst<String, String> {
                 if(firstV.functions.containsKey(id)){
                     if(firstV.functions.get(id).containsKey(scope)){
                         ArrayList<String> params = firstV.functions.get(id).get(scope);
-
                         if(currParams.size() == params.size()){
                             for(int i=0;i<currParams.size();i++){
-                                if(currParams.get(i) != params.get(i)){
+                                if(!currParams.get(i).equals(params.get(i))){
                                     return false;
+//                                    return false;
                                 }
                             }
-                            
                             return true;
+                        }else{
+                            return false;
                         }
-
                     }else{
                         return true;
                     }
@@ -186,7 +186,11 @@ public class secondVisitor extends GJDepthFirst<String, String> {
             }
         }
 
-        n.f4.accept(this, argu+"::"+id);
+        if(n.f4.accept(this, argu+"::"+id) == null){
+            if(!hasSameParametersWithSuper(id, argu, new ArrayList<String>())){
+                throw new Exception("error method is overloading a super method with diffrent parameters");
+            }
+        }
         n.f7.accept(this, null);
         n.f8.accept(this, argu+"::"+id);
         String ReType = n.f10.accept(this, argu+"::"+id);
@@ -217,7 +221,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
             throw new Exception("error method is overloading a super method with diffrent parameters");
         }
 
-        return null;
+        return "i did my job";
     }
 
     /**

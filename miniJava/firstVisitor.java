@@ -156,21 +156,44 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         }
 
         String className;
+        String tempScope = scope;
         while(true){
             if(scope.lastIndexOf("::") != -1){
-                className = scope.substring(scope.lastIndexOf("::")+2);
-                scope = scope.substring(scope.lastIndexOf("::")+2);
+                className = tempScope.substring(tempScope.lastIndexOf("::")+2);
+                tempScope = tempScope.substring(tempScope.lastIndexOf("::")+2);
             }else{
-                className = scope;
+                className = tempScope;
             }
             if(classes.containsKey(className)){
+                if(j==1){
+                    if(hasSuper(id, scope)){
+                        return;
+                    }
+                }
                 offsetPush(id, className, type, j);
                 return;
             }else{
 //                System.out.println(className);
-                if(scope.lastIndexOf("::") == -1){
+                if(tempScope.lastIndexOf("::") == -1){
                     return;
                 }
+            }
+        }
+    }
+
+    public boolean hasSuper(String id, String scope){
+        while(true){
+            if(scope.lastIndexOf("::") != -1){
+                scope = scope.substring(0, scope.lastIndexOf("::"));
+                if(functions.containsKey(id)){
+                    if(functions.get(id).containsKey(scope)){
+                        return true;
+                    }
+                }else{
+                    return false;
+                }
+            }else{
+                return false;
             }
         }
     }
@@ -287,7 +310,18 @@ public class firstVisitor extends GJDepthFirst<String, String> {
     public String visit(MethodDeclaration n, String argu) throws Exception {
         String type = n.f1.accept(this, null);
         String id = n.f2.accept(this, null);
-        n.f4.accept(this, argu+"::"+id);
+        if(n.f4.accept(this, argu+"::"+id) == null){
+            if(functions.containsKey(id)){
+                if(functions.get(id).containsKey(argu)){
+                    throw new Exception("error multiple same-id methods");
+                }else{
+                    functions.get(id).put(argu, new ArrayList<String>());
+                }
+            }else{
+                functions.put(id, new HashMap<>());
+                functions.get(id).put(argu, new ArrayList<String>());
+            }
+        }
         insertField(id, argu, type, 1);
 
         n.f7.accept(this, argu+"::"+id);
@@ -326,7 +360,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         }
 
 
-        return null;
+        return "i did my job";
     }
 
     /**
