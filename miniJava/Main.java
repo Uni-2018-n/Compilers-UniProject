@@ -46,9 +46,9 @@ public class Main {
 //                }
 //                System.out.println("First part DONE:");
     
-    
                 secondVisitor secVis = new secondVisitor(eval);
                 root.accept(secVis, null);
+                eval.offsetPrint();
                 System.out.println(args[pp]+" success");
             }
             catch(ParseException ex){

@@ -1,10 +1,44 @@
 import syntaxtree.*;
 import visitor.GJDepthFirst;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
+
+
+class pair{
+    LinkedList<offsetItem> vars;
+    LinkedList<offsetItem> functions;
+    public pair(){
+        vars = new LinkedList<offsetItem>();
+        functions = new LinkedList<offsetItem>();
+    }
+    public void push(String i, int o, int j){
+        if(j ==0){
+            if(vars.size() == 0){
+                vars.add(new offsetItem(i, 0, o));
+            }else{
+                vars.add(new offsetItem(i, vars.getLast().size, vars.getLast().size+o));
+            }
+        }else{
+            if(functions.size() == 0){
+                functions.add(new offsetItem(i, 0, o));
+            }else{
+                functions.add(new offsetItem(i, functions.getLast().size, functions.getLast().size+o));
+            }
+        }
+    }
+
+}
+class offsetItem {
+    String id;
+    int myOffset;
+    int size;
+
+    public offsetItem(String i, int o, int s){
+        id = i;
+        myOffset = o;
+        size = s;
+    }
+}
 
 public class firstVisitor extends GJDepthFirst<String, String> {
     //    HashMap<Pair<String, String>, String> fields = new HashMap<new Pair<String, String>, String> ();
@@ -13,6 +47,9 @@ public class firstVisitor extends GJDepthFirst<String, String> {
     HashMap<String, String>                  classes = new HashMap<String, String>();
 
     HashMap<String, HashMap<String, ArrayList<String>>> functions  = new HashMap<String, HashMap<String, ArrayList<String>>>();
+
+    LinkedHashMap<String, pair> offsets = new LinkedHashMap<String, pair>();
+
 
 
     public String lookUp(String id, String scope, int j){
@@ -60,6 +97,37 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         }
     }
 
+    public void offsetPush(String id, String className, String type, int j){
+        if(!offsets.containsKey(className)){
+            offsets.put(className, new pair());
+        }
+        if(j==1){
+            offsets.get(className).push(id, 8, j);
+            return;
+        }
+        switch (type){
+            case "int":
+                offsets.get(className).push(id, 4, j);
+                return;
+            case "bool":
+                offsets.get(className).push(id, 1, j);
+                return;
+            default:
+                offsets.get(className).push(id, 8, j);
+        }
+    }
+
+    public void offsetPrint(){
+        for(Map.Entry<String, pair>ite : offsets.entrySet()){
+            for(int i=0;i<ite.getValue().vars.size();i++){
+                System.out.println(ite.getKey()+"."+ite.getValue().vars.get(i).id+": "+ite.getValue().vars.get(i).myOffset);
+            }
+            for(int i=0;i<ite.getValue().functions.size();i++){
+                System.out.println(ite.getKey()+"."+ite.getValue().functions.get(i).id+": "+ite.getValue().functions.get(i).myOffset);
+            }
+        }
+    }
+
     public void insertField(String id, String scope, String type, int j) throws Exception{
         if(!fields.containsKey(id)){
             fields.put(id, new HashMap<String, List<String>>());
@@ -71,6 +139,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
                     if(fields.get(id).get(scope).get(0) != null){
                         throw new Exception("error multiple same-id variables");
                     }else{
+
                         fields.get(id).get(scope).set(0, type);
                     }
                 }else{
@@ -83,6 +152,25 @@ public class firstVisitor extends GJDepthFirst<String, String> {
             }else{
                 fields.get(id).put(scope, Arrays.asList(new String[2]));
                 fields.get(id).get(scope).set(j, type);
+            }
+        }
+
+        String className;
+        while(true){
+            if(scope.lastIndexOf("::") != -1){
+                className = scope.substring(scope.lastIndexOf("::")+2);
+                scope = scope.substring(scope.lastIndexOf("::")+2);
+            }else{
+                className = scope;
+            }
+            if(classes.containsKey(className)){
+                offsetPush(id, className, type, j);
+                return;
+            }else{
+//                System.out.println(className);
+                if(scope.lastIndexOf("::") == -1){
+                    return;
+                }
             }
         }
     }
@@ -112,7 +200,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         String cID = n.f1.accept(this, null);
         String paramID = n.f11.accept(this, null);
         classes.put(cID, "");
-        insertField(paramID, cID, "stringArray", 0);
+        insertField(paramID, cID+"::main", "stringArray", 0);
         n.f14.accept(this, cID+"::main");
         return null;
     }
