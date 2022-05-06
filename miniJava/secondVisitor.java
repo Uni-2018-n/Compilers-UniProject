@@ -585,6 +585,9 @@ public class secondVisitor extends GJDepthFirst<String, String> {
             }
             String funcID = n.f2.accept(this, null);
             String funcReturnType = firstV.lookUp(funcID, idHistory, 1);
+            if(funcReturnType == null){
+                throw new Exception("error class has no method named "+funcID);
+            }
             n.f4.accept(this, idHistory+"::"+funcID+"/+/"+argu);
             return funcReturnType;
         }else{
