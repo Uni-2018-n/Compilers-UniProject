@@ -1,6 +1,10 @@
 import syntaxtree.*;
 import visitor.GJDepthFirst;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.*;
 
 
@@ -115,6 +119,27 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         }
     }
 
+//    public void offsetPrint(String file){
+//        try{
+//            PrintWriter temp = new PrintWriter("../examples/output_my/"+file.substring(file.lastIndexOf('/'), file.lastIndexOf('.'))+".txt", "UTF-8");
+//            for(Map.Entry<String, pair>ite : offsets.entrySet()){
+//                temp.println("-----------Class "+ite.getKey()+"-----------");
+//                temp.println("--Variables---");
+//                for(int i=0;i<ite.getValue().vars.size();i++){
+//                    temp.println(ite.getKey()+"."+ite.getValue().vars.get(i).id+" : "+ite.getValue().vars.get(i).myOffset);
+//                }
+//                temp.println("---Methods---");
+//                for(int i=0;i<ite.getValue().functions.size();i++){
+//                    temp.println(ite.getKey()+"."+ite.getValue().functions.get(i).id+" : "+ite.getValue().functions.get(i).myOffset);
+//                }
+//                temp.println();
+//            }
+//            temp.close();
+//
+//        }catch (IOException e){
+//            e.printStackTrace();
+//        }
+//    }
     public void offsetPrint(){
         for(Map.Entry<String, pair>ite : offsets.entrySet()){
             System.out.println("-----------Class "+ite.getKey()+"-----------");
@@ -284,6 +309,9 @@ public class firstVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(ClassDeclaration n, String argu) throws Exception {
         String cID = n.f1.accept(this, null);
+        if(classes.containsKey(cID)){
+            throw new Exception("multiple declaration of same class");
+        }
         classes.put(cID, "");
         offsets.put(cID, new pair());
         n.f3.accept(this, cID);
@@ -305,6 +333,9 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         String cID = n.f1.accept(this, null);
         String cExID = n.f3.accept(this, null);
         offsets.put(cID, new pair());
+        if(classes.containsKey(cID)){
+            throw new Exception("multiple declaration of same class");
+        }
         if(classes.containsKey(cExID)){
             if(!classes.get(cExID).equals("")){
                 classes.put(cID, classes.get(cExID)+"::"+cExID);
