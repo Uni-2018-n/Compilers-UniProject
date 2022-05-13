@@ -22,19 +22,19 @@ public class Main {
             try{
                 fis = new FileInputStream(args[pp]);
                 MiniJavaParser parser = new MiniJavaParser(fis);
-    
+
                 Goal root = parser.Goal();
-    
+
 //                System.out.println("Program parsed successfully.");
-    
+
                 firstVisitor eval = new firstVisitor();
-                root.accept(eval, null);
+                root.accept(eval, null);//accept for first visitor
 
 //                System.out.println("First part DONE:");
-    
+
                 secondVisitor secVis = new secondVisitor(eval);
-                root.accept(secVis, null);
-                eval.offsetPrint();
+                root.accept(secVis, null);//accept for second with parameter the first
+                eval.offsetPrint();//print offsets
                 System.out.println(args[pp]+" success");
             }
             catch(ParseException ex){

@@ -46,20 +46,20 @@ class offsetItem {
 
 public class firstVisitor extends GJDepthFirst<String, String> {
     HashMap<String, HashMap<String, List<String>>> fields  = new HashMap<String, HashMap<String, List<String>>>();
-    HashMap<String, String>                  classes = new HashMap<String, String>();
+    HashMap<String, String> classes = new HashMap<String, String>();
     HashMap<String, HashMap<String, ArrayList<String>>> functions  = new HashMap<String, HashMap<String, ArrayList<String>>>();
     LinkedHashMap<String, pair> offsets = new LinkedHashMap<String, pair>();
 
 
 
-    public String lookUp(String id, String scope, int j){
+    public String lookUp(String id, String scope, int j){//simple lookup, if the field exists in this scope ok else return null
         String tempScope = scope;
         if(fields.containsKey(id)){
             while(true){
                 if(fields.get(id).containsKey(tempScope)){
                     return fields.get(id).get(tempScope).get(j);
                 }else{
-                    int temp = tempScope.lastIndexOf("::");
+                    int temp = tempScope.lastIndexOf("::");//check all the parents if needed
                     if(temp == -1){
                         return null;
                     }
@@ -71,7 +71,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         return null;
     }
 
-    public String classesLookup(String id){
+    public String classesLookup(String id){//get the parent classes of a specific class (if they exist)
         while(true){
             if(id.lastIndexOf("::") != -1){
                 String temp = id.substring(id.lastIndexOf("::"));
@@ -97,7 +97,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         }
     }
 
-    public void offsetPush(String id, String className, String type, int j, int initialValue){
+    public void offsetPush(String id, String className, String type, int j, int initialValue){//push an item in the offsets. case of j=1 its a function so size is 8
         if(j==1){
             offsets.get(className).push(id, 8, j, initialValue);
             return;
@@ -109,12 +109,12 @@ public class firstVisitor extends GJDepthFirst<String, String> {
             case "bool":
                 offsets.get(className).push(id, 1, j, initialValue);
                 return;
-            default:
+            default://case array or other class
                 offsets.get(className).push(id, 8, j, initialValue);
         }
     }
 
-    public void offsetPrint(){
+    public void offsetPrint(){//simple prints
         for(Map.Entry<String, pair>ite : offsets.entrySet()){
             System.out.println("-----------Class "+ite.getKey()+"-----------");
             System.out.println("--Variables---");
@@ -129,14 +129,14 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         }
     }
 
-    public void insertField(String id, String scope, String type, int j) throws Exception{
+    public void insertField(String id, String scope, String type, int j) throws Exception{//simple insert that checks if it already exists or not
         if(!fields.containsKey(id)){
             fields.put(id, new HashMap<String, List<String>>());
-            fields.get(id).put(scope, Arrays.asList(new String[2]));
+            fields.get(id).put(scope, Arrays.asList(new String[2]));//0 index variable, 1 is set if its a function
             fields.get(id).get(scope).set(j, type);
         }else{
             if(fields.get(id).containsKey(scope)){
-                if(j == 0){
+                if(j == 0){//did this just for the error messages
                     if(fields.get(id).get(scope).get(0) != null){
                         throw new Exception("error multiple same-id variables");
                     }else{
@@ -158,7 +158,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
 
         String className;
         String tempScope = scope;
-        while(true){
+        while(true){ //this is used to calculate the initial offset and append the item to the offsets.
             if(scope.lastIndexOf("::") != -1){
                 className = tempScope.substring(tempScope.lastIndexOf("::")+2);
                 tempScope = tempScope.substring(tempScope.lastIndexOf("::")+2);
@@ -167,12 +167,12 @@ public class firstVisitor extends GJDepthFirst<String, String> {
             }
             if(classes.containsKey(className)){
                 if(j==1){
-                    if(hasSuper(id, scope)){
+                    if(hasSuper(id, scope)){//overrided functions dont need anything extra
                         return;
                     }
                 }
                 int initialOffset;
-                if(scope.lastIndexOf("::") == -1){
+                if(scope.lastIndexOf("::") == -1){//if the class is a child class we dont have initial offset 0, calculate that
                     initialOffset = 0;
                 }else{
                     while(true){
@@ -188,17 +188,17 @@ public class firstVisitor extends GJDepthFirst<String, String> {
                         }
                     }
                 }
-                offsetPush(id, className, type, j, initialOffset);
+                offsetPush(id, className, type, j, initialOffset);//initial offset may not be used but still exists for when it does
                 return;
             }else{
-                if(tempScope.lastIndexOf("::") == -1){
+                if(tempScope.lastIndexOf("::") == -1){//in case we inside a function scope
                     return;
                 }
             }
         }
     }
 
-    public int getLastFromSuper(String className, int j){
+    public int getLastFromSuper(String className, int j){//used to get the last offset from the super, j determines if we talk about functions or variables
         if(offsets.containsKey(className)){
             if(j==0){
                 if(offsets.get(className).vars.size() != 0){
@@ -217,7 +217,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         return 0;
     }
 
-    public boolean hasSuper(String id, String scope){
+    public boolean hasSuper(String id, String scope){//checks if the function is overriding or not
         while(true){
             if(scope.lastIndexOf("::") != -1){
                 scope = scope.substring(0, scope.lastIndexOf("::"));
@@ -260,7 +260,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         String paramID = n.f11.accept(this, null);
 
         classes.put(cID, "");
-        insertField(paramID, cID+"::main", "stringArray", 0);
+        insertField(paramID, cID+"::main", "stringArray", 0);//since main is a "magic" class dont really matter but why not
         n.f14.accept(this, cID+"::main");
         return null;
     }
@@ -282,9 +282,9 @@ public class firstVisitor extends GJDepthFirst<String, String> {
      * f5 -> "}"
      */
     public String visit(ClassDeclaration n, String argu) throws Exception {
-        String cID = n.f1.accept(this, null);
+        String cID = n.f1.accept(this, null);//accepting an identifier always returns a string with the identifier
 
-        if(classes.containsKey(cID)){
+        if(classes.containsKey(cID)){//in case class already declared
             throw new Exception("multiple declaration of same class");
         }
         classes.put(cID, "");
@@ -312,8 +312,8 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         if(classes.containsKey(cID)){
             throw new Exception("multiple declaration of same class");
         }
-        if(classes.containsKey(cExID)){
-            if(!classes.get(cExID).equals("")){
+        if(classes.containsKey(cExID)){//since extended class must always be declared first
+            if(!classes.get(cExID).equals("")){//this is used to let the child class know it's parent and grandparent classes
                 classes.put(cID, classes.get(cExID)+"::"+cExID);
             }else{
                 classes.put(cID, cExID);
@@ -335,7 +335,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         String type = n.f0.accept(this, null);
         String id= n.f1.accept(this, null);
 
-        insertField(id, argu, type, 0);
+        insertField(id, argu, type, 0);//since its a variable, j is equal with 0
         return null;
     }
 
@@ -358,19 +358,19 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         String type = n.f1.accept(this, null);
         String id = n.f2.accept(this, null);
 
-        if(n.f4.accept(this, argu+"::"+id) == null){
+        if(n.f4.accept(this, argu+"::"+id) == null){//in case of no parameters
             if(functions.containsKey(id)){
-                if(functions.get(id).containsKey(argu)){
+                if(functions.get(id).containsKey(argu)){//in case method has same id
                     throw new Exception("error multiple same-id methods");
                 }else{
                     functions.get(id).put(argu, new ArrayList<String>());
                 }
             }else{
                 functions.put(id, new HashMap<>());
-                functions.get(id).put(argu, new ArrayList<String>());
+                functions.get(id).put(argu, new ArrayList<String>());//empty one since no parameters
             }
         }
-        insertField(id, argu, type, 1);
+        insertField(id, argu, type, 1);//since this is a method
         n.f7.accept(this, argu+"::"+id);
         return null;
     }
@@ -379,18 +379,18 @@ public class firstVisitor extends GJDepthFirst<String, String> {
      * f0 -> FormalParameter()
      * f1 -> FormalParameterTail()
      */
-    public String visit(FormalParameterList n, String argu) throws Exception {
-        String id = argu.substring(argu.lastIndexOf("::")+2, argu.length());
-        String path = argu.substring(0, argu.lastIndexOf("::"));
+    public String visit(FormalParameterList n, String argu) throws Exception {//in case we have no parameters this may never get called and return null
+        String id = argu.substring(argu.lastIndexOf("::")+2, argu.length());//last "scope" item has the function name, so extract it
+        String path = argu.substring(0, argu.lastIndexOf("::"));//keep the good scope parts
 
         ArrayList<String> nodes = new ArrayList<String>();
-        String curr = n.f0.accept(this, argu);
+        String curr = n.f0.accept(this, argu);//dont forget the first argument (yes I did)
         nodes.add(curr);
         for(Node i : n.f1.f0.nodes){
             curr = i.accept(this, argu);
             nodes.add(curr);
         }
-        if(functions.containsKey(id)){
+        if(functions.containsKey(id)){//same with above but with filled arrayList
             if(functions.get(id).containsKey(path)){
                 throw new Exception("error multiple same-id methods");
             }else{
@@ -400,7 +400,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
             functions.put(id, new HashMap<>());
             functions.get(id).put(path, nodes);
         }
-        return "i did my job";
+        return "i did my job";//thats why we return something here to let parent know that this was called
     }
 
     /**
@@ -411,7 +411,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         String type = n.f0.accept(this, null);
         String id = n.f1.accept(this, null);
 
-        insertField(id, argu, type, 0);
+        insertField(id, argu, type, 0);//dont forget to add the parameters as variables..(again, i did.)
         return type;
     }
 
@@ -434,7 +434,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
      * f0 -> <IDENTIFIER>
      */
     public String visit(Identifier n, String argu) throws Exception {
-        return n.f0.tokenImage;
+        return n.f0.tokenImage;//for this visitor we only need the id no more logic needed
     }
 
     /**
