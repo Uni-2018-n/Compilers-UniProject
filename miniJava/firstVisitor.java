@@ -41,18 +41,13 @@ class offsetItem {
         id = i;
         myOffset = o;
         size = s;
-//        System.out.println(myOffset + " "+ size);
     }
 }
 
 public class firstVisitor extends GJDepthFirst<String, String> {
-    //    HashMap<Pair<String, String>, String> fields = new HashMap<new Pair<String, String>, String> ();
-    //className -> fieldName -> type
     HashMap<String, HashMap<String, List<String>>> fields  = new HashMap<String, HashMap<String, List<String>>>();
     HashMap<String, String>                  classes = new HashMap<String, String>();
-
     HashMap<String, HashMap<String, ArrayList<String>>> functions  = new HashMap<String, HashMap<String, ArrayList<String>>>();
-
     LinkedHashMap<String, pair> offsets = new LinkedHashMap<String, pair>();
 
 
@@ -119,27 +114,6 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         }
     }
 
-//    public void offsetPrint(String file){
-//        try{
-//            PrintWriter temp = new PrintWriter("../examples/output_my/"+file.substring(file.lastIndexOf('/'), file.lastIndexOf('.'))+".txt", "UTF-8");
-//            for(Map.Entry<String, pair>ite : offsets.entrySet()){
-//                temp.println("-----------Class "+ite.getKey()+"-----------");
-//                temp.println("--Variables---");
-//                for(int i=0;i<ite.getValue().vars.size();i++){
-//                    temp.println(ite.getKey()+"."+ite.getValue().vars.get(i).id+" : "+ite.getValue().vars.get(i).myOffset);
-//                }
-//                temp.println("---Methods---");
-//                for(int i=0;i<ite.getValue().functions.size();i++){
-//                    temp.println(ite.getKey()+"."+ite.getValue().functions.get(i).id+" : "+ite.getValue().functions.get(i).myOffset);
-//                }
-//                temp.println();
-//            }
-//            temp.close();
-//
-//        }catch (IOException e){
-//            e.printStackTrace();
-//        }
-//    }
     public void offsetPrint(){
         for(Map.Entry<String, pair>ite : offsets.entrySet()){
             System.out.println("-----------Class "+ite.getKey()+"-----------");
@@ -214,7 +188,6 @@ public class firstVisitor extends GJDepthFirst<String, String> {
                         }
                     }
                 }
-//                System.out.println(initialOffset);
                 offsetPush(id, className, type, j, initialOffset);
                 return;
             }else{
@@ -285,6 +258,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
     public String visit(MainClass n, String argu) throws Exception {
         String cID = n.f1.accept(this, null);
         String paramID = n.f11.accept(this, null);
+
         classes.put(cID, "");
         insertField(paramID, cID+"::main", "stringArray", 0);
         n.f14.accept(this, cID+"::main");
@@ -309,6 +283,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(ClassDeclaration n, String argu) throws Exception {
         String cID = n.f1.accept(this, null);
+
         if(classes.containsKey(cID)){
             throw new Exception("multiple declaration of same class");
         }
@@ -332,6 +307,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
     public String visit(ClassExtendsDeclaration n, String argu) throws Exception {
         String cID = n.f1.accept(this, null);
         String cExID = n.f3.accept(this, null);
+
         offsets.put(cID, new pair());
         if(classes.containsKey(cID)){
             throw new Exception("multiple declaration of same class");
@@ -358,8 +334,8 @@ public class firstVisitor extends GJDepthFirst<String, String> {
     public String visit(VarDeclaration n, String argu) throws Exception {
         String type = n.f0.accept(this, null);
         String id= n.f1.accept(this, null);
-        insertField(id, argu, type, 0);
 
+        insertField(id, argu, type, 0);
         return null;
     }
 
@@ -381,6 +357,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
     public String visit(MethodDeclaration n, String argu) throws Exception {
         String type = n.f1.accept(this, null);
         String id = n.f2.accept(this, null);
+
         if(n.f4.accept(this, argu+"::"+id) == null){
             if(functions.containsKey(id)){
                 if(functions.get(id).containsKey(argu)){
@@ -394,10 +371,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
             }
         }
         insertField(id, argu, type, 1);
-
         n.f7.accept(this, argu+"::"+id);
-//        n.f8.accept(this, argu);
-//        n.f10.accept(this, argu);
         return null;
     }
 
@@ -415,10 +389,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         for(Node i : n.f1.f0.nodes){
             curr = i.accept(this, argu);
             nodes.add(curr);
-
         }
-
-
         if(functions.containsKey(id)){
             if(functions.get(id).containsKey(path)){
                 throw new Exception("error multiple same-id methods");
@@ -429,8 +400,6 @@ public class firstVisitor extends GJDepthFirst<String, String> {
             functions.put(id, new HashMap<>());
             functions.get(id).put(path, nodes);
         }
-
-
         return "i did my job";
     }
 
@@ -441,6 +410,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
     public String visit(FormalParameter n, String argu) throws Exception {
         String type = n.f0.accept(this, null);
         String id = n.f1.accept(this, null);
+
         insertField(id, argu, type, 0);
         return type;
     }

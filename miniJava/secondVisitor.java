@@ -29,10 +29,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
                 }
             }
         }
-        if(type.equals(checkExt)){
-            return true;
-        }
-        return false;
+        return type.equals(checkExt);
     }
 
     public boolean hasSameParametersWithSuper(String id, String scope, ArrayList<String> currParams){
@@ -46,7 +43,6 @@ public class secondVisitor extends GJDepthFirst<String, String> {
                             for(int i=0;i<currParams.size();i++){
                                 if(!currParams.get(i).equals(params.get(i))){
                                     return false;
-//                                    return false;
                                 }
                             }
                             return true;
@@ -56,7 +52,6 @@ public class secondVisitor extends GJDepthFirst<String, String> {
                     }else{
                         return true;
                     }
-
                 }else{
                     return true;
                 }
@@ -67,10 +62,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     }
 
     public boolean typeExists(String type){
-        if(type.equals("int") || type.equals("bool") || type.equals("intArray") || type.equals("boolArray") || firstV.classesLookup(type) != null){
-            return true;
-        }
-        return false;
+        return type.equals("int") || type.equals("bool") || type.equals("intArray") || type.equals("boolArray") || firstV.classesLookup(type) != null;
     }
 
     /**
@@ -95,8 +87,8 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(MainClass n, String argu) throws Exception {
         String cID = n.f1.accept(this, null);
+
         n.f14.accept(this, null);
-//        System.out.println(firstV.classes.get(cID)+cID);
         n.f15.accept(this, firstV.classes.get(cID)+cID+"::main");
         return null;
     }
@@ -108,6 +100,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     */
     public String visit(VarDeclaration n, String argu) throws Exception {
         String type =n.f0.accept(this, null);
+
         if(!typeExists(type)){
             throw new Exception("error type: "+type+" isnt a valid type");
         }
@@ -132,6 +125,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(ClassDeclaration n, String argu) throws Exception {
         String cID = n.f1.accept(this, null);
+
         n.f3.accept(this, null);
         n.f4.accept(this, cID);
         return null;
@@ -150,6 +144,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(ClassExtendsDeclaration n, String argu) throws Exception {
         String cID = n.f1.accept(this, null);
         String cExID = n.f3.accept(this, null);
+
         n.f5.accept(this, null);
         n.f6.accept(this, firstV.classesLookup(cExID)+"::"+cID);
         return null;
@@ -174,9 +169,11 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(MethodDeclaration n, String argu) throws Exception {
         String _ret=null;
         String type = n.f1.accept(this, null);
+
         if(!typeExists(type)){
             throw new Exception("error type: "+type+" isnt a valid type");
         }
+
         String id = n.f2.accept(this, null);
 
         if(argu.lastIndexOf("::") != -1){
@@ -185,7 +182,6 @@ public class secondVisitor extends GJDepthFirst<String, String> {
                 throw new Exception("error method declaration has diffrent return type from super");
             }
         }
-
         if(n.f4.accept(this, argu+"::"+id) == null){
             if(!hasSameParametersWithSuper(id, argu, new ArrayList<String>())){
                 throw new Exception("error method is overloading a super method with diffrent parameters");
@@ -195,6 +191,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         n.f8.accept(this, argu+"::"+id);
         String ReType = n.f10.accept(this, argu+"::"+id);
         String actualRetType = firstV.lookUp(id, argu+"::"+id, 1);
+
         if(!ReType.equals(actualRetType)){
             throw new Exception("error method declaration: "+id+" wrong return type, given "+ReType+" needed "+actualRetType);
         }
@@ -220,7 +217,6 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         if(!hasSameParametersWithSuper(id, path, nodes)){
             throw new Exception("error method is overloading a super method with diffrent parameters");
         }
-
         return "i did my job";
     }
 
@@ -230,6 +226,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(FormalParameter n, String argu) throws Exception {
         String type = n.f0.accept(this, null);
+
         if(!typeExists(type)){
             throw new Exception("error type: "+type+" isnt a valid type");
         }
@@ -292,8 +289,8 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(AssignmentStatement n, String argu) throws Exception {
         String type = n.f0.accept(this, argu);
-        // String type = firstV.lookUp(id, argu);
         String temp = n.f2.accept(this, argu);
+
        if(!type.equals(temp)){
            if(isSubClass(type, temp)){
                return type;
@@ -317,6 +314,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     String type = n.f0.accept(this, argu);
     String iterator = n.f2.accept(this, argu);
     String assignment = n.f5.accept(this, argu);
+
     if(type.contains("Array")){
         if(iterator.equals("int")){
             if(assignment.equals("int")){
@@ -340,7 +338,6 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     }else{
         throw new Exception("error identifier is not an array");
     }
-    
  }
 
      /**
@@ -354,6 +351,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     */
     public String visit(IfStatement n, String argu) throws Exception {
         String condType = n.f2.accept(this, argu);
+
         if(!condType.equals("bool")){
             throw new Exception("error if condition must be boolean");
         }
@@ -371,6 +369,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     */
     public String visit(WhileStatement n, String argu) throws Exception {
         String condType = n.f2.accept(this, argu);
+
         if(!condType.equals("bool")){
             throw new Exception("error while condition must be boolean");
         }
@@ -387,6 +386,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     */
    public String visit(PrintStatement n, String argu) throws Exception {
     String expr = n.f2.accept(this, argu);
+
     if(!expr.equals("int")){
         throw new Exception("error print statement accepts only integers");
     }
@@ -433,6 +433,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(Clause n, String argu) throws Exception {
         String temp = n.f0.accept(this, argu);
+
         if(temp.equals("this")){
             return "this";
         }
@@ -459,6 +460,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(PrimaryExpression n, String argu) throws Exception {
         String temp = n.f0.accept(this, argu);
+
         if(temp.equals("this")){
             String p = firstV.classesLookup(argu);
             if(p.lastIndexOf("::") != -1){
@@ -580,6 +582,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(MessageSend n, String argu) throws Exception {
         String idType = n.f0.accept(this, argu);
+
         if(!idType.equals("int") && !idType.equals("bool") && !idType.equals("boolArray") && !idType.equals("intArray")){
             String idHistory;
             if(idType.equals("this")){
@@ -618,7 +621,6 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         for(Node i : n.f1.f0.nodes){
             params.add(i.accept(this, paramsArg));
         }
-
         if(actualParams.size() == params.size()){
             for(int i=0;i<actualParams.size();i++){
                 if(!actualParams.get(i).equals(params.get(i)) ){
