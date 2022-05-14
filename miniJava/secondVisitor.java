@@ -86,7 +86,8 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f17 -> "}"
      */
     public String visit(MainClass n, String argu) throws Exception {
-        String cID = n.f1.accept(this, null);
+        String cID = n.f1.accept(this, null);//in this visitor identifiers if they receive null as argument they simply return the identifier
+                                                    // if not they return the type of the identifier (its a variable so the type of the variable etc)
 
         n.f14.accept(this, null);
         n.f15.accept(this, firstV.classes.get(cID)+cID+"::main");
@@ -146,7 +147,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         String cExID = n.f3.accept(this, null);
 
         n.f5.accept(this, null);
-        n.f6.accept(this, firstV.classesLookup(cExID)+"::"+cID);
+        n.f6.accept(this, firstV.classesLookup(cExID)+"::"+cID);//get the complete history of cID
         return null;
     }
 
@@ -182,7 +183,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
                 throw new Exception("error method declaration has diffrent return type from super");
             }
         }
-        if(n.f4.accept(this, argu+"::"+id) == null){
+        if(n.f4.accept(this, argu+"::"+id) == null){//case empty parameters we also need to check if child and parent match
             if(!hasSameParametersWithSuper(id, argu, new ArrayList<String>())){
                 throw new Exception("error method is overloading a super method with diffrent parameters");
             }
@@ -217,7 +218,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         if(!hasSameParametersWithSuper(id, path, nodes)){
             throw new Exception("error method is overloading a super method with diffrent parameters");
         }
-        return "i did my job";
+        return "i did my job";//like the first visitor
     }
 
     /**
@@ -315,7 +316,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     String iterator = n.f2.accept(this, argu);
     String assignment = n.f5.accept(this, argu);
 
-    if(type.contains("Array")){
+    if(type.contains("Array")){//we need to check if the id is an array, what the array accepts and if the iterator is int
         if(iterator.equals("int")){
             if(assignment.equals("int")){
                 if(type.contains("int")){
@@ -352,7 +353,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(IfStatement n, String argu) throws Exception {
         String condType = n.f2.accept(this, argu);
 
-        if(!condType.equals("bool")){
+        if(!condType.equals("bool")){//condition must always be boolean
             throw new Exception("error if condition must be boolean");
         }
         n.f4.accept(this, argu);
@@ -370,7 +371,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(WhileStatement n, String argu) throws Exception {
         String condType = n.f2.accept(this, argu);
 
-        if(!condType.equals("bool")){
+        if(!condType.equals("bool")){//condition must always be boolean
             throw new Exception("error while condition must be boolean");
         }
         n.f4.accept(this, argu);
@@ -387,7 +388,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
    public String visit(PrintStatement n, String argu) throws Exception {
     String expr = n.f2.accept(this, argu);
 
-    if(!expr.equals("int")){
+    if(!expr.equals("int")){//print accepts only integers, as answered in a piazza post
         throw new Exception("error print statement accepts only integers");
     }
     return null;
@@ -407,7 +408,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      *       | Clause()
      */
     public String visit(Expression n, String argu) throws Exception {
-        return n.f0.accept(this, argu);
+        return n.f0.accept(this, argu);//for each case calculate and check if the types are correct and they match.
     }
 
 
@@ -435,9 +436,9 @@ public class secondVisitor extends GJDepthFirst<String, String> {
         String temp = n.f0.accept(this, argu);
 
         if(temp.equals("this")){
-            return "this";
+            return "this";//special case
         }
-        return n.f0.accept(this, argu);
+        return n.f0.accept(this, argu);//expressions returns types so return the type, this is a special case and can be handled specially
     }
 
     /**
@@ -445,7 +446,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f1 -> Clause()
      */
     public String visit(NotExpression n, String argu) throws Exception {
-        return n.f1.accept(this, argu);
+        return n.f1.accept(this, argu);//we dont really care if its "not" or not..
     }
 
     /**
@@ -461,7 +462,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(PrimaryExpression n, String argu) throws Exception {
         String temp = n.f0.accept(this, argu);
 
-        if(temp.equals("this")){
+        if(temp.equals("this")){//if its the special this senario, we need to return the class identifier so it can be handled as class's field
             String p = firstV.classesLookup(argu);
             if(p.lastIndexOf("::") != -1){
                 return p.substring(p.lastIndexOf("::"));
@@ -565,7 +566,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(ArrayLength n, String argu) throws Exception {
         String typeOne = n.f0.accept(this, argu);
         
-        if(typeOne.contains("Array")){
+        if(typeOne.contains("Array")){//dont care about what array type it is, only need to be an array
             return "int";
         }else{
             throw new Exception("error "+typeOne+" is not an array");
@@ -583,7 +584,7 @@ public class secondVisitor extends GJDepthFirst<String, String> {
     public String visit(MessageSend n, String argu) throws Exception {
         String idType = n.f0.accept(this, argu);
 
-        if(!idType.equals("int") && !idType.equals("bool") && !idType.equals("boolArray") && !idType.equals("intArray")){
+        if(!idType.equals("int") && !idType.equals("bool") && !idType.equals("boolArray") && !idType.equals("intArray")){//if the identifier is something of those they cant have fields..
             String idHistory;
             if(idType.equals("this")){
                 idHistory = firstV.classesLookup(argu);
@@ -591,11 +592,11 @@ public class secondVisitor extends GJDepthFirst<String, String> {
                 idHistory = firstV.classesLookup(idType);
             }
             String funcID = n.f2.accept(this, null);
-            String funcReturnType = firstV.lookUp(funcID, idHistory, 1);
+            String funcReturnType = firstV.lookUp(funcID, idHistory, 1);//j is fixed since we trying to send a message and not try to get a variable
             if(funcReturnType == null){
                 throw new Exception("error class has no method named "+funcID);
             }
-            n.f4.accept(this, idHistory+"::"+funcID+"/+/"+argu);
+            n.f4.accept(this, idHistory+"::"+funcID+"/+/"+argu);//very special case,
             return funcReturnType;
         }else{
             throw new Exception("error identifier dosent have functions to call");
@@ -608,8 +609,8 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f1 -> ExpressionTail()
      */
     public String visit(ExpressionList n, String argu) throws Exception {
-        String funcArg = argu.substring(0, argu.lastIndexOf("/+/"));
-        String paramsArg = argu.substring(argu.lastIndexOf("/+/")+3);
+        String funcArg = argu.substring(0, argu.lastIndexOf("/+/"));//the scope we are
+        String paramsArg = argu.substring(argu.lastIndexOf("/+/")+3);//the scope we are checking
 
         int temp = funcArg.lastIndexOf("::");
         String funcClass = funcArg.substring(0, temp);
@@ -675,14 +676,14 @@ public class secondVisitor extends GJDepthFirst<String, String> {
      * f0 -> <IDENTIFIER>
      */
     public String visit(Identifier n, String argu) throws Exception {
-        if(argu != null){
+        if(argu != null){//in case we need to receive the type
             String temp = firstV.lookUp(n.f0.tokenImage, argu, 0);//TODO: check j here
             if(temp == null){
                 throw new Exception("cant find variable "+ n.f0.tokenImage+" in the scope "+argu);
             }
             return temp;
         }
-        return n.f0.tokenImage;
+        return n.f0.tokenImage;//in case we just need the identifier name
     }
 
     /**

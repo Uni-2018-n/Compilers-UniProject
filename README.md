@@ -41,6 +41,11 @@ Since we now have a symbol table we only need to semantic check our input. Simpl
 to finally return the type of the item they are referring to. Also at this step its important to note that the program checks if a used identifier exists,
 since its not the first's visitor job to check. 
 
+In this visitor most visit functions return a type so the callers can compare and see if its the desired type or not. 
+
+We use functions like isSubClass or hasSameParametersWithSuper to determine if the extended class is correctly extending the parent class and for some functions just for convenience like type Exists to check if a
+class identifier exists or not(and also checks if the type is simple types like int or an array of booleans etc).
+
 Since for the scope of this project there is no need to print all the error messages, in case of using a non-existant identifier the program throws a null exception and stops the semantic check.
 
 In case of some other kind of error the program prints the appropriate message as a thrown exception message error and throws the exception.
