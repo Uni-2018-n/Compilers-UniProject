@@ -34,8 +34,11 @@ public class Main {
 
                 secondVisitor secVis = new secondVisitor(eval);
                 root.accept(secVis, null);//accept for second with parameter the first
-                eval.offsetPrint();//print offsets
-                System.out.println(args[pp]+" success");
+                // eval.offsetPrint();//print offsets
+                System.out.println(args[pp]+" success2");
+                thirdVisitor thirdVis = new thirdVisitor(args[pp], eval);
+                root.accept(thirdVis, null);
+                System.out.println(args[pp]+" success3");
             }
             catch(ParseException ex){
                 System.err.println(ex.getMessage());
