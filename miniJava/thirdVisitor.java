@@ -3,12 +3,14 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import syntaxtree.*;
 import visitor.GJDepthFirst;
 
 
 public class thirdVisitor extends GJDepthFirst<String, String> {
+    int regC = 0;
     firstVisitor firstV;
     PrintWriter out;
     public thirdVisitor(String fileName, firstVisitor firVis){
@@ -21,6 +23,18 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         }
 
         firstV = firVis;
+    }
+
+    public Boolean lookUp(String id, String scope){//simple lookup, if the field exists in this scope ok else return null
+        if(firstV.fields.containsKey(id)){
+            if(firstV.fields.get(id).containsKey(scope)){
+                return true;
+            }else{
+                return false;
+            }
+        }else{
+            return null;
+        }
     }
 
 
@@ -222,9 +236,8 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String id = n.f2.accept(this, argu);
         String params = n.f4.accept(this, argu);
         n.f8.accept(this, argu);
-        n.f10.accept(this, argu);
-        
-        String fin = 
+
+        String fin =
         "define "+ type + " @"+argu+"."+id+"(i8* %this";
         if(params != null){
             if(params.indexOf("//") != -1){
@@ -237,6 +250,11 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         out.write(fin);
 
         n.f7.accept(this, argu);
+        String fullArg = firstV.classesLookup(argu)+"::"+id;
+        String tempCout = n.f10.accept(this, fullArg);
+        String ret =
+                "ret i1 %_"+tempCout;
+        out.write(ret);
         fin = "}\n";
         out.write(fin);
         return _ret;
@@ -296,6 +314,221 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
 
 
     /**
+     * f0 -> AndExpression()
+     *       | CompareExpression()
+     *       | PlusExpression()
+     *       | MinusExpression()
+     *       | TimesExpression()
+     *       | ArrayLookup()
+     *       | ArrayLength()
+     *       | MessageSend()
+     *       | Clause()
+     */
+    public String visit(Expression n, String argu) throws Exception {
+        return n.f0.accept(this, argu);
+    }
+
+    /**
+     * f0 -> Clause()
+     * f1 -> "&&"
+     * f2 -> Clause()
+     */
+    public String visit(AndExpression n, String argu) throws Exception {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f2.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> PrimaryExpression()
+     * f1 -> "<"
+     * f2 -> PrimaryExpression()
+     */
+    public String visit(CompareExpression n, String argu) throws Exception {
+        Pattern pattern = Pattern.compile("-?\\d+(\\.\\d+)?");
+        String _ret=null;
+        String t1 = n.f0.accept(this, argu);
+        String t2 = n.f2.accept(this, argu);
+        String fin = "";
+
+        int t1c = regC++;
+        int t1c2 = regC++;
+        if(pattern.matcher(t1).matches()){
+            fin +=
+                "%_"+t1c+" = alloca i32\n"+
+                "store i32 "+t1+", i32* %_"+t1c+"\n"+
+                "%_"+t1c2+" = load i32, i32* %_"+t1c+"\n";
+        }else{
+            if(lookUp(t1, argu)){
+                fin +=
+                    "%_"+t1c2+" = load i31, i32* %"+t1+"\n";
+            }
+        }
+
+        int t2c = regC++;
+        int t2c2 = regC++;
+
+        if(pattern.matcher(t2).matches()){
+            fin +=
+                    "%_"+t2c+" = alloca i32\n"+
+                            "store i32 "+t2+", i32* %_"+t2c+"\n"+
+                            "%_"+t2c2+" = load i32, i32* %_"+t2c+"\n";
+        }else{
+            if(lookUp(t2, argu)){
+                fin +=
+                        "%_"+t2c2+" = load i31, i32* %"+t2+"\n";
+            }
+        }
+
+        int outC =regC++;
+
+        fin +=
+                "%_"+outC+" = icmp slt i32 %_"+t1c2+", %_"+t2c2+"\n";
+
+        out.write(fin);
+        return String.valueOf(outC);
+    }
+
+    /**
+     * f0 -> PrimaryExpression()
+     * f1 -> "+"
+     * f2 -> PrimaryExpression()
+     */
+    public String visit(PlusExpression n, String argu) throws Exception {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> PrimaryExpression()
+     * f1 -> "-"
+     * f2 -> PrimaryExpression()
+     */
+    public String visit(MinusExpression n, String argu) throws Exception {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> PrimaryExpression()
+     * f1 -> "*"
+     * f2 -> PrimaryExpression()
+     */
+    public String visit(TimesExpression n, String argu) throws Exception {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> PrimaryExpression()
+     * f1 -> "["
+     * f2 -> PrimaryExpression()
+     * f3 -> "]"
+     */
+    public String visit(ArrayLookup n, String argu) throws Exception {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        n.f3.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> PrimaryExpression()
+     * f1 -> "."
+     * f2 -> "length"
+     */
+    public String visit(ArrayLength n, String argu) throws Exception {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> PrimaryExpression()
+     * f1 -> "."
+     * f2 -> Identifier()
+     * f3 -> "("
+     * f4 -> ( ExpressionList() )?
+     * f5 -> ")"
+     */
+    public String visit(MessageSend n, String argu) throws Exception {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        n.f3.accept(this, argu);
+        n.f4.accept(this, argu);
+        n.f5.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> Expression()
+     * f1 -> ExpressionTail()
+     */
+    public String visit(ExpressionList n, String argu) throws Exception {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> ( ExpressionTerm() )*
+     */
+    public String visit(ExpressionTail n, String argu) throws Exception {
+        return n.f0.accept(this, argu);
+    }
+
+    /**
+     * f0 -> ","
+     * f1 -> Expression()
+     */
+    public String visit(ExpressionTerm n, String argu) throws Exception {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> NotExpression()
+     *       | PrimaryExpression()
+     */
+    public String visit(Clause n, String argu) throws Exception {
+        return n.f0.accept(this, argu);
+    }
+
+    /**
+     * f0 -> IntegerLiteral()
+     *       | TrueLiteral()
+     *       | FalseLiteral()
+     *       | Identifier()
+     *       | ThisExpression()
+     *       | ArrayAllocationExpression()
+     *       | AllocationExpression()
+     *       | BracketExpression()
+     */
+    public String visit(PrimaryExpression n, String argu) throws Exception {
+        return n.f0.accept(this, argu);
+    }
+
+
+    /**
     * f0 -> ArrayType()
     *       | BooleanType()
     *       | IntegerType()
@@ -346,6 +579,13 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     }
 
     /**
+     * f0 -> <INTEGER_LITERAL>
+     */
+    public String visit(IntegerLiteral n, String argu) throws Exception {
+        return n.f0.tokenImage;
+    }
+
+    /**
     * f0 -> <IDENTIFIER>
     */
     public String visit(Identifier n, String argu) throws Exception {
@@ -353,5 +593,18 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
             return "i8*";
         }
         return n.f0.tokenImage;
+    }
+
+    /**
+     * f0 -> "("
+     * f1 -> Expression()
+     * f2 -> ")"
+     */
+    public String visit(BracketExpression n, String argu) throws Exception {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        return _ret;
     }
 }
