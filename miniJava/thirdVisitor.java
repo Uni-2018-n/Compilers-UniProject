@@ -139,12 +139,13 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String _ret=null;
         String cName = n.f1.accept(this, argu);
         String str = 
-        "define i32 @main() {\n"+
-        "ret i32 0\n"+
+        "define i32 @main() {\n";
+        out.write(str);
+        n.f14.accept(this, argu);
+        str = "ret i32 0\n"+
         "}\n";
         out.write(str);
         n.f11.accept(this, argu);
-        n.f14.accept(this, argu);
         n.f15.accept(this, argu);
         return _ret;
     }
@@ -160,8 +161,43 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     public String visit(ClassDeclaration n, String argu) throws Exception {
         String _ret=null;
         String id = n.f1.accept(this, argu);
-        n.f3.accept(this, argu);
+        // n.f3.accept(this, argu);
         n.f4.accept(this, id);
+        return _ret;
+    }
+
+    /**
+    * f0 -> "class"
+    * f1 -> Identifier()
+    * f2 -> "extends"
+    * f3 -> Identifier()
+    * f4 -> "{"
+    * f5 -> ( VarDeclaration() )*
+    * f6 -> ( MethodDeclaration() )*
+    * f7 -> "}"
+    */
+    public String visit(ClassExtendsDeclaration n, String argu) throws Exception {
+        String _ret=null;
+        String id = n.f1.accept(this, argu);
+        n.f3.accept(this, argu);
+        // n.f5.accept(this, argu);
+        n.f6.accept(this, id);
+        return _ret;
+    }
+
+    /**
+    * f0 -> Type()
+    * f1 -> Identifier()
+    * f2 -> ";"
+    */
+    public String visit(VarDeclaration n, String argu) throws Exception {
+        String _ret=null;
+        String type = n.f0.accept(this, argu);
+        String id = n.f1.accept(this, argu);
+
+        String fin= "%"+id+" = alloca "+type+"\n";
+        out.write(fin);
+
         return _ret;
     }
 
@@ -185,10 +221,9 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String type = n.f1.accept(this, argu);
         String id = n.f2.accept(this, argu);
         String params = n.f4.accept(this, argu);
-        n.f7.accept(this, argu);
         n.f8.accept(this, argu);
         n.f10.accept(this, argu);
-
+        
         String fin = 
         "define "+ type + " @"+argu+"."+id+"(i8* %this";
         if(params != null){
@@ -199,7 +234,10 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         }else{
             fin += ") {\n";
         }
-        fin += "}\n";
+        out.write(fin);
+
+        n.f7.accept(this, argu);
+        fin = "}\n";
         out.write(fin);
         return _ret;
     }
