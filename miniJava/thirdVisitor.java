@@ -398,7 +398,6 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      *       | Clause()
      */
     public String visit(Expression n, String argu) throws Exception {
-        System.out.println("test");
         return n.f0.accept(this, argu);
     }
 
@@ -560,22 +559,26 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         int reg;
         String fin = "";
         if(t.equals("true")){
-            reg = regC++;
+            int regT = regC++;
             fin +=
-                "%_"+regC+" = alloca i1\n"+
-                "store i1 1, i1* %_"+regC+"\n";
+                "%_"+regT+" = alloca i1\n"+
+                "store i1 1, i1* %_"+regT+"\n";
+            reg = regC++;
+            fin += "%_"+reg+" = load i1, i1* %_"+regT+"\n";
         }else if(t.equals("false")){
-            reg = regC++;
+            int regT = regC++;
             fin +=
-                    "%_"+regC+" = alloca i1\n"+
-                            "store i1 0, i1* %_"+regC+"\n";
+                    "%_"+regT+" = alloca i1\n"+
+                    "store i1 0, i1* %_"+regT+"\n";
+            reg = regC++;
+            fin += "%_"+reg+" = load i1, i1* %_"+regT+"\n";
         }else if(t.contains("%")){
             return t;
         }else{
             reg = regC++;
             if(lookUp(t, argu)){//check if variable is declared inside the function
                 fin +=
-                        "%_"+reg+" = load i1, i1* %"+t+"\n";
+                    "%_"+reg+" = load i1, i1* %"+t+"\n";
             }else{//TODO: case variable is a field
 
             }
@@ -593,7 +596,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String t = n.f1.accept(this, argu);
         int reg = regC++;
         String fin =
-                "%_"+regC+" = xor i1 "+t+", true\n";
+                "%_"+reg+" = xor i1 "+t+", true\n";
         out.write(fin);
         return "%_"+reg;
     }
