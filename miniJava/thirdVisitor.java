@@ -320,7 +320,6 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     */
     public String visit(MethodDeclaration n, String argu) throws Exception {
         regC =0;
-        labelC =0;
         String _ret=null;
         String type = n.f1.accept(this, argu);
         String id = n.f2.accept(this, argu);
@@ -421,7 +420,6 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f3 -> ";"
      */
     public String visit(AssignmentStatement n, String argu) throws Exception {
-        String _ret=null;
         String id = n.f0.accept(this, argu);
         String exprReg = n.f2.accept(this, argu);
         String fin ="";
@@ -431,7 +429,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 "store "+type+" "+exprReg+", "+type+"* %"+id+"\n";
         }
         out.write(fin);
-        return _ret;
+        return null;
     }
 
     /**
@@ -465,15 +463,26 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f6 -> Statement()
      */
     public String visit(IfStatement n, String argu) throws Exception {
-        String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
-        n.f4.accept(this, argu);
-        n.f5.accept(this, argu);
-        n.f6.accept(this, argu);
-        return _ret;
+        String expr = n.f2.accept(this, argu);
+
+        int lbl1 = labelC++;
+        int lbl2 = labelC++;
+        int lbl3 = labelC++;
+        String fin =
+                "br i1 "+expr+", label %then"+lbl1+", label %else"+lbl2+"\n"+
+            "then"+lbl1+":\n";
+        out.write(fin);
+                String stmtIf = n.f4.accept(this, argu);
+        fin =
+                "br label %fin"+lbl3+"\n"+
+            "else"+lbl2+":\n";
+        out.write(fin);
+                String stmtElse = n.f6.accept(this, argu);
+        fin =
+                "br label %fin"+lbl3+"\n"+
+                "fin"+lbl3+": \n";
+        out.write(fin);
+        return null;
     }
 
     /**
@@ -484,13 +493,27 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f4 -> Statement()
      */
     public String visit(WhileStatement n, String argu) throws Exception {
-        String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
-        n.f4.accept(this, argu);
-        return _ret;
+
+        int lbl1 = labelC++;
+        int lbl2 = labelC++;
+        int lbl3 = labelC++;
+
+        String fin =
+                "br label %expr"+lbl1+"\n"+
+            "expr"+lbl1+":\n";
+        out.write(fin);
+                String expr = n.f2.accept(this, argu);
+        fin =
+                "br i1 "+expr+", label %stmt"+lbl2+", label %fin"+lbl3+"\n"+
+            "stmt"+lbl2+":\n";
+        out.write(fin);
+                String stmt = n.f4.accept(this, argu);
+        fin =
+                "br label %expr"+lbl1+"\n"+
+            "fin"+lbl3+":\n";
+        out.write(fin);
+
+        return null;
     }
 
     /**
@@ -501,12 +524,11 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f4 -> ";"
      */
     public String visit(PrintStatement n, String argu) throws Exception {
-        String _ret=null;
         String t = n.f2.accept(this, argu+"::/::int");
         String fin =
                 "call void (i32) @print_int(i32 "+t+")\n";
         out.write(fin);
-        return _ret;
+        return null;
     }
 
 
