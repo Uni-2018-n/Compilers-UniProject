@@ -11,6 +11,7 @@ import visitor.GJDepthFirst;
 
 public class thirdVisitor extends GJDepthFirst<String, String> {
     int regC = 0;
+    int labelC = 0;
     firstVisitor firstV;
     PrintWriter out;
     public thirdVisitor(String fileName, firstVisitor firVis){
@@ -37,8 +38,78 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         }
     }
 
+    public String doSmthWithInts(String t1, String t2, String argu, String action){
+        Pattern pattern = Pattern.compile("-?\\d+(\\.\\d+)?");
+        String fin = "";
 
-    public String getDeclaration(String id, String className){
+        int t1c;
+        int t1c2;
+        if(pattern.matcher(t1).matches()){
+        System.out.println(t1);
+            t1c= regC++;
+            t1c2= regC++;
+            fin +=
+                    "%_"+t1c+" = alloca i32\n"+
+                            "store i32 "+t1+", i32* %_"+t1c+"\n"+
+                            "%_"+t1c2+" = load i32, i32* %_"+t1c+"\n";
+        }else if(t1.contains("%")){
+            t1c2= Integer.parseInt(t1.substring(t1.lastIndexOf("%_")+2));
+        }else{
+            t1c= regC++;
+            t1c2= regC++;
+            if(lookUp(t1, argu)){//check if variable is declared inside the function
+                fin +=
+                        "%_"+t1c2+" = load i32, i32* %"+t1+"\n";
+            }else{//TODO: case variable is a field
+
+            }
+        }
+
+        int t2c = regC++;
+        int t2c2 = regC++;
+
+        if(pattern.matcher(t2).matches()){
+            t2c= regC++;
+            t2c2= regC++;
+            fin +=
+                    "%_"+t2c+" = alloca i32\n"+
+                            "store i32 "+t2+", i32* %_"+t2c+"\n"+
+                            "%_"+t2c2+" = load i32, i32* %_"+t2c+"\n";
+        }else if(t2.contains("%")){
+            t2c2= Integer.parseInt(t2.substring(t2.lastIndexOf("%_")+2));
+        }else{
+            t2c= regC++;
+            t2c2= regC++;
+            if(lookUp(t2, argu)){//check if variable is declared inside the function
+                fin +=
+                        "%_"+t2c2+" = load i32, i32* %"+t2+"\n";
+            }else{//TODO: case variable is a field
+
+            }
+        }
+
+        int outC =regC++;
+
+        if(action.equals("icmp")){
+            fin +=
+                    "%_"+outC+" = icmp slt i32 %_"+t1c2+", %_"+t2c2+"\n";
+        }else if(action.equals("add")){
+            fin +=
+                    "%_"+outC+" = add i32 %_"+t1c2+", %_"+t2c2+"\n";
+        }else if(action.equals("sub")){
+            fin +=
+                    "%_"+outC+" = sub i32 %_"+t1c2+", %_"+t2c2+"\n";
+        }else if(action.equals("mul")){
+            fin +=
+                    "%_"+outC+" = mul i32 %_"+t1c2+", %_"+t2c2+"\n";
+        }
+
+
+        out.write(fin);
+        return "%_"+String.valueOf(outC);
+    }
+
+        public String getDeclaration(String id, String className){
         String ret = "";
         String retType = firstV.lookUp(id, className+"::"+id, 1);
 
@@ -231,6 +302,8 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     * f12 -> "}"
     */
     public String visit(MethodDeclaration n, String argu) throws Exception {
+        regC =0;
+        labelC =0;
         String _ret=null;
         String type = n.f1.accept(this, argu);
         String id = n.f2.accept(this, argu);
@@ -253,7 +326,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String fullArg = firstV.classesLookup(argu)+"::"+id;
         String tempCout = n.f10.accept(this, fullArg);
         String ret =
-                "ret i1 %_"+tempCout;
+                "ret "+type+" "+tempCout+"\n";
         out.write(ret);
         fin = "}\n";
         out.write(fin);
@@ -325,6 +398,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      *       | Clause()
      */
     public String visit(Expression n, String argu) throws Exception {
+        System.out.println("test");
         return n.f0.accept(this, argu);
     }
 
@@ -334,10 +408,23 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f2 -> Clause()
      */
     public String visit(AndExpression n, String argu) throws Exception {
-        String _ret=null;
-        n.f0.accept(this, argu);
-        n.f2.accept(this, argu);
-        return _ret;
+        String t1 = n.f0.accept(this, argu);
+        String t2 = n.f2.accept(this, argu);
+        int l1 = labelC++;
+        int l2 = labelC++;
+        int l3 = labelC++;
+        int regOut = regC++;
+        String fin =
+                "br i1 "+t1+", label %if"+l1+", label %else"+l2+"\n"+
+            "if"+l1+":\n";
+        fin +=
+                "br label %fin"+l3+"\n"+
+            "else"+l2+":\n"+
+                "br label %fin"+l3+"\n"+
+            "fin"+l3+":\n"+
+                "%_"+regOut+" = phi i1 [ false, %if"+l1+"], ["+t2+", %else"+l2+"]\n";
+        out.write(fin);
+        return "%_"+regOut;
     }
 
     /**
@@ -346,48 +433,10 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f2 -> PrimaryExpression()
      */
     public String visit(CompareExpression n, String argu) throws Exception {
-        Pattern pattern = Pattern.compile("-?\\d+(\\.\\d+)?");
-        String _ret=null;
         String t1 = n.f0.accept(this, argu);
         String t2 = n.f2.accept(this, argu);
-        String fin = "";
 
-        int t1c = regC++;
-        int t1c2 = regC++;
-        if(pattern.matcher(t1).matches()){
-            fin +=
-                "%_"+t1c+" = alloca i32\n"+
-                "store i32 "+t1+", i32* %_"+t1c+"\n"+
-                "%_"+t1c2+" = load i32, i32* %_"+t1c+"\n";
-        }else{
-            if(lookUp(t1, argu)){
-                fin +=
-                    "%_"+t1c2+" = load i31, i32* %"+t1+"\n";
-            }
-        }
-
-        int t2c = regC++;
-        int t2c2 = regC++;
-
-        if(pattern.matcher(t2).matches()){
-            fin +=
-                    "%_"+t2c+" = alloca i32\n"+
-                            "store i32 "+t2+", i32* %_"+t2c+"\n"+
-                            "%_"+t2c2+" = load i32, i32* %_"+t2c+"\n";
-        }else{
-            if(lookUp(t2, argu)){
-                fin +=
-                        "%_"+t2c2+" = load i31, i32* %"+t2+"\n";
-            }
-        }
-
-        int outC =regC++;
-
-        fin +=
-                "%_"+outC+" = icmp slt i32 %_"+t1c2+", %_"+t2c2+"\n";
-
-        out.write(fin);
-        return String.valueOf(outC);
+        return doSmthWithInts(t1, t2, argu, "icmp");
     }
 
     /**
@@ -396,11 +445,10 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f2 -> PrimaryExpression()
      */
     public String visit(PlusExpression n, String argu) throws Exception {
-        String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        return _ret;
+        String t1 = n.f0.accept(this, argu);
+        String t2 = n.f2.accept(this, argu);
+
+        return doSmthWithInts(t1, t2, argu, "add");
     }
 
     /**
@@ -409,11 +457,10 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f2 -> PrimaryExpression()
      */
     public String visit(MinusExpression n, String argu) throws Exception {
-        String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        return _ret;
+        String t1 = n.f0.accept(this, argu);
+        String t2 = n.f2.accept(this, argu);
+
+        return doSmthWithInts(t1, t2, argu, "sub");
     }
 
     /**
@@ -422,11 +469,10 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f2 -> PrimaryExpression()
      */
     public String visit(TimesExpression n, String argu) throws Exception {
-        String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        return _ret;
+        String t1 = n.f0.accept(this, argu);
+        String t2 = n.f2.accept(this, argu);
+
+        return doSmthWithInts(t1, t2, argu, "mul");
     }
 
     /**
@@ -510,7 +556,46 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      *       | PrimaryExpression()
      */
     public String visit(Clause n, String argu) throws Exception {
-        return n.f0.accept(this, argu);
+        String t = n.f0.accept(this, argu);
+        int reg;
+        String fin = "";
+        if(t.equals("true")){
+            reg = regC++;
+            fin +=
+                "%_"+regC+" = alloca i1\n"+
+                "store i1 1, i1* %_"+regC+"\n";
+        }else if(t.equals("false")){
+            reg = regC++;
+            fin +=
+                    "%_"+regC+" = alloca i1\n"+
+                            "store i1 0, i1* %_"+regC+"\n";
+        }else if(t.contains("%")){
+            return t;
+        }else{
+            reg = regC++;
+            if(lookUp(t, argu)){//check if variable is declared inside the function
+                fin +=
+                        "%_"+reg+" = load i1, i1* %"+t+"\n";
+            }else{//TODO: case variable is a field
+
+            }
+        }
+        out.write(fin);
+        return "%_"+reg;
+    }
+
+    /**
+     * f0 -> "!"
+     * f1 -> Clause()
+     */
+    public String visit(NotExpression n, String argu) throws Exception {
+        String _ret=null;
+        String t = n.f1.accept(this, argu);
+        int reg = regC++;
+        String fin =
+                "%_"+regC+" = xor i1 "+t+", true\n";
+        out.write(fin);
+        return "%_"+reg;
     }
 
     /**
@@ -586,6 +671,20 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     }
 
     /**
+     * f0 -> "true"
+     */
+    public String visit(TrueLiteral n, String argu) throws Exception {
+        return "true";
+    }
+
+    /**
+     * f0 -> "false"
+     */
+    public String visit(FalseLiteral n, String argu) throws Exception {
+        return "false";
+    }
+
+    /**
     * f0 -> <IDENTIFIER>
     */
     public String visit(Identifier n, String argu) throws Exception {
@@ -601,10 +700,6 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f2 -> ")"
      */
     public String visit(BracketExpression n, String argu) throws Exception {
-        String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        return _ret;
+        return n.f1.accept(this, argu);
     }
 }
