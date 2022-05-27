@@ -244,7 +244,6 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         "define i32 @main() {\n";
         out.write(str);
         n.f14.accept(this, "");
-//        n.f11.accept(this, argu);
         n.f15.accept(this, cName+"::main");
         str = "ret i32 0\n"+
         "}\n";
@@ -263,7 +262,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     public String visit(ClassDeclaration n, String argu) throws Exception {
         String _ret=null;
         String id = n.f1.accept(this, argu);
-        // n.f3.accept(this, argu);
+        // n.f3.accept(this, argu); //TODO: class var declaration
         n.f4.accept(this, id);
         return _ret;
     }
@@ -278,11 +277,11 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     * f6 -> ( MethodDeclaration() )*
     * f7 -> "}"
     */
-    public String visit(ClassExtendsDeclaration n, String argu) throws Exception {
+    public String visit(ClassExtendsDeclaration n, String argu) throws Exception {//TODO: extends nothing is done
         String _ret=null;
         String id = n.f1.accept(this, argu);
         n.f3.accept(this, argu);
-        // n.f5.accept(this, argu);
+        // n.f5.accept(this, argu); //TODO: class var declaration
         n.f6.accept(this, id);
         return _ret;
     }
@@ -370,15 +369,16 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     public String visit(FormalParameter n, String argu) throws Exception {
         String type = n.f0.accept(this, argu);
         String id = n.f1.accept(this, argu);
+        String temp ="";
         if(argu.contains("//")){
-            String temp = argu;
+            temp = argu;
             int index = temp.indexOf("//");
             temp = temp.substring(0, index)+", "+type+" %."+id+temp.substring(index);
             temp += "%"+id+" = alloca "+type+"\n"+
             "store "+type+" %."+id+", "+type+"* %"+id+"\n";
             return temp;
         }else{
-            String temp = ", "+type+" %."+id+
+            temp = ", "+type+" %."+id+
             "//"+
             "%"+id+" = alloca "+type+"\n"+
             "store "+type+" %."+id+", "+type+"* %"+id+"\n";
@@ -404,7 +404,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     /**
      * f0 -> Block()
      *       | AssignmentStatement()
-     *       | ArrayAssignmentStatement()
+     *       | ArrayAssignmentStatement()//TODO:
      *       | IfStatement()
      *       | WhileStatement()
      *       | PrintStatement()
@@ -538,9 +538,9 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      *       | PlusExpression()
      *       | MinusExpression()
      *       | TimesExpression()
-     *       | ArrayLookup()
-     *       | ArrayLength()
-     *       | MessageSend()
+     *       | ArrayLookup()//TODO:
+     *       | ArrayLength()//TODO:
+     *       | MessageSend()//TODO:
      *       | Clause()
      */
     public String visit(Expression n, String argu) throws Exception {
@@ -775,7 +775,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String t = n.f1.accept(this, argu);
         int reg = regC++;
         String fin =
-                "%_"+reg+" = xor i1 "+t+", true\n";
+                "%_"+reg+" = xor i1 "+t+", true\n";//TODO: check if xor is 100% correct for not.
         out.write(fin);
         return "%_"+reg;
     }
@@ -785,9 +785,9 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      *       | TrueLiteral()
      *       | FalseLiteral()
      *       | Identifier()
-     *       | ThisExpression()
-     *       | ArrayAllocationExpression()
-     *       | AllocationExpression()
+     *       | ThisExpression()//TODO:
+     *       | ArrayAllocationExpression()//TODO:
+     *       | AllocationExpression()//TODO:
      *       | BracketExpression()
      */
     public String visit(PrimaryExpression n, String argu) throws Exception {
