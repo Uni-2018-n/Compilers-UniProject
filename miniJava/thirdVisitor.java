@@ -2,6 +2,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -45,7 +47,6 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         int t1c;
         int t1c2;
         if(pattern.matcher(t1).matches()){
-        System.out.println(t1);
             t1c= regC++;
             t1c2= regC++;
             fin +=
@@ -112,7 +113,6 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         public String getDeclaration(String id, String className){
         String ret = "";
         String retType = firstV.lookUp(id, className+"::"+id, 1);
-
         if(retType.equals("int")){
             ret +="i32 ";
         }else if(retType.equals("bool")){
@@ -146,8 +146,24 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
             }
         }
         ret += ")* @"+className+"."+id+" to i8*";
-        return ret;
+            return ret;
     }
+
+    public String getDeclarationVar(String id, String className){
+        String retType = firstV.lookUp(id, className+"::"+id, 0);
+        if(retType.equals("int")){
+            return "i32";
+        }else if(retType.equals("bool")){
+            return "i1";
+        }else if(retType.equals("intArray")){
+            return "i32*";
+        }else if(retType.equals("boolArray")){
+            return "i1*";
+        }else{
+            return "i8*";
+        }
+    }
+
 
 
     /**
@@ -160,7 +176,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     String vTables="";
     for(Map.Entry<String, pair>ite : firstV.offsets.entrySet()){
         vTables += "@."+ite.getKey()+"_vtable = global ["+ite.getValue().functions.size()+" x i8*] [";
-        // System.out.println(ite.getKey());
+
         for(int i=0;i<ite.getValue().functions.size();i++){
             vTables +="i8* bitcast ("+getDeclaration(ite.getValue().functions.get(i).id, ite.getKey())+")";
             if(i+1<ite.getValue().functions.size()){
@@ -170,7 +186,6 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         vTables +="]\n";
     }
     vTables +="\n\n";
-    // System.out.println(vTables);
     out.write(vTables);
 
 
@@ -221,17 +236,19 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     * f17 -> "}"
     */
     public String visit(MainClass n, String argu) throws Exception {
+        regC = 0;
+        labelC =0;
         String _ret=null;
-        String cName = n.f1.accept(this, argu);
+        String cName = n.f1.accept(this, "");
         String str = 
         "define i32 @main() {\n";
         out.write(str);
-        n.f14.accept(this, argu);
+        n.f14.accept(this, "");
+//        n.f11.accept(this, argu);
+        n.f15.accept(this, cName+"::main");
         str = "ret i32 0\n"+
         "}\n";
         out.write(str);
-        n.f11.accept(this, argu);
-        n.f15.accept(this, argu);
         return _ret;
     }
 
@@ -308,7 +325,6 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String type = n.f1.accept(this, argu);
         String id = n.f2.accept(this, argu);
         String params = n.f4.accept(this, argu);
-        n.f8.accept(this, argu);
 
         String fin =
         "define "+ type + " @"+argu+"."+id+"(i8* %this";
@@ -323,6 +339,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         out.write(fin);
 
         n.f7.accept(this, argu);
+        n.f8.accept(this, argu+"::"+id);
         String fullArg = firstV.classesLookup(argu)+"::"+id;
         String tempCout = n.f10.accept(this, fullArg);
         String ret =
@@ -385,6 +402,113 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         return n.f1.accept(this, argu);
     }
 
+    /**
+     * f0 -> Block()
+     *       | AssignmentStatement()
+     *       | ArrayAssignmentStatement()
+     *       | IfStatement()
+     *       | WhileStatement()
+     *       | PrintStatement()
+     */
+    public String visit(Statement n, String argu) throws Exception {
+        return n.f0.accept(this, argu);
+    }
+
+    /**
+     * f0 -> Identifier()
+     * f1 -> "="
+     * f2 -> Expression()
+     * f3 -> ";"
+     */
+    public String visit(AssignmentStatement n, String argu) throws Exception {
+        String _ret=null;
+        String id = n.f0.accept(this, argu);
+        String exprReg = n.f2.accept(this, argu);
+        String fin ="";
+        if(lookUp(id, argu)){
+            String type = getDeclarationVar(id, argu);
+            fin +=
+                "store "+type+" "+exprReg+", "+type+"* %"+id+"\n";
+        }
+        out.write(fin);
+        return _ret;
+    }
+
+    /**
+     * f0 -> Identifier()
+     * f1 -> "["
+     * f2 -> Expression()
+     * f3 -> "]"
+     * f4 -> "="
+     * f5 -> Expression()
+     * f6 -> ";"
+     */
+    public String visit(ArrayAssignmentStatement n, String argu) throws Exception {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        n.f3.accept(this, argu);
+        n.f4.accept(this, argu);
+        n.f5.accept(this, argu);
+        n.f6.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> "if"
+     * f1 -> "("
+     * f2 -> Expression()
+     * f3 -> ")"
+     * f4 -> Statement()
+     * f5 -> "else"
+     * f6 -> Statement()
+     */
+    public String visit(IfStatement n, String argu) throws Exception {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        n.f3.accept(this, argu);
+        n.f4.accept(this, argu);
+        n.f5.accept(this, argu);
+        n.f6.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> "while"
+     * f1 -> "("
+     * f2 -> Expression()
+     * f3 -> ")"
+     * f4 -> Statement()
+     */
+    public String visit(WhileStatement n, String argu) throws Exception {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        n.f3.accept(this, argu);
+        n.f4.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> "System.out.println"
+     * f1 -> "("
+     * f2 -> Expression()
+     * f3 -> ")"
+     * f4 -> ";"
+     */
+    public String visit(PrintStatement n, String argu) throws Exception {
+        String _ret=null;
+        String t = n.f2.accept(this, argu+"::/::int");
+        String fin =
+                "call void (i32) @print_int(i32 "+t+")\n";
+        out.write(fin);
+        return _ret;
+    }
+
 
     /**
      * f0 -> AndExpression()
@@ -407,6 +531,8 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f2 -> Clause()
      */
     public String visit(AndExpression n, String argu) throws Exception {
+        if(argu.contains("::/::"))
+        argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String t1 = n.f0.accept(this, argu);
         String t2 = n.f2.accept(this, argu);
         int l1 = labelC++;
@@ -432,6 +558,8 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f2 -> PrimaryExpression()
      */
     public String visit(CompareExpression n, String argu) throws Exception {
+        if(argu.contains("::/::"))
+            argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String t1 = n.f0.accept(this, argu);
         String t2 = n.f2.accept(this, argu);
 
@@ -444,6 +572,8 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f2 -> PrimaryExpression()
      */
     public String visit(PlusExpression n, String argu) throws Exception {
+        if(argu.contains("::/::"))
+            argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String t1 = n.f0.accept(this, argu);
         String t2 = n.f2.accept(this, argu);
 
@@ -456,6 +586,8 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f2 -> PrimaryExpression()
      */
     public String visit(MinusExpression n, String argu) throws Exception {
+        if(argu.contains("::/::"))
+            argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String t1 = n.f0.accept(this, argu);
         String t2 = n.f2.accept(this, argu);
 
@@ -468,6 +600,8 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f2 -> PrimaryExpression()
      */
     public String visit(TimesExpression n, String argu) throws Exception {
+        if(argu.contains("::/::"))
+            argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String t1 = n.f0.accept(this, argu);
         String t2 = n.f2.accept(this, argu);
 
@@ -481,6 +615,8 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f3 -> "]"
      */
     public String visit(ArrayLookup n, String argu) throws Exception {
+        if(argu.contains("::/::"))
+            argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
@@ -495,6 +631,8 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f2 -> "length"
      */
     public String visit(ArrayLength n, String argu) throws Exception {
+        if(argu.contains("::/::"))
+            argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
@@ -511,6 +649,8 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f5 -> ")"
      */
     public String visit(MessageSend n, String argu) throws Exception {
+        if(argu.contains("::/::"))
+            argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
@@ -555,10 +695,22 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      *       | PrimaryExpression()
      */
     public String visit(Clause n, String argu) throws Exception {
+        boolean isInt = argu.contains("::/::");
+        if(argu.contains("::/::"))
+            argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String t = n.f0.accept(this, argu);
         int reg;
         String fin = "";
-        if(t.equals("true")){
+        Pattern pattern = Pattern.compile("-?\\d+(\\.\\d+)?");
+        if(pattern.matcher(t).matches()){
+            int regT = regC++;
+            fin +=
+                "%_"+regT+" = alloca i32\n"+
+                "store i32 "+t+", i32* %_"+regT+"\n";
+            reg = regC++;
+            fin +=
+                "%_"+reg+" = load i32, i32* %_"+regT+"\n";
+        }else if(t.equals("true")){
             int regT = regC++;
             fin +=
                 "%_"+regT+" = alloca i1\n"+
@@ -577,8 +729,13 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         }else{
             reg = regC++;
             if(lookUp(t, argu)){//check if variable is declared inside the function
-                fin +=
-                    "%_"+reg+" = load i1, i1* %"+t+"\n";
+                if(isInt){
+                    fin +=
+                        "%_"+reg+" = load i32, i32* %"+t+"\n";
+                }else{
+                    fin +=
+                        "%_"+reg+" = load i1, i1* %"+t+"\n";
+                }
             }else{//TODO: case variable is a field
 
             }
