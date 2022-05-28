@@ -129,6 +129,37 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         }
     }
 
+    public int getOffset(String id, String className, boolean j){
+        while(!className.isEmpty()){
+            String tempName;
+            if(className.contains("::")){
+                tempName = className.substring(className.lastIndexOf("::")+2);
+                className = className.substring(0, className.lastIndexOf("::"));
+            }else{
+                tempName = className;
+                className = "";
+            }
+            if(offsets.containsKey(tempName)) {
+                if (j) {
+                    LinkedList<offsetItem> temp = offsets.get(tempName).functions;
+                    for (offsetItem offsetItem : temp) {
+                        if (offsetItem.id.equals(id)) {
+                            return offsetItem.myOffset+8;
+                        }
+                    }
+                } else {
+                    LinkedList<offsetItem> temp = offsets.get(tempName).vars;
+                    for (offsetItem offsetItem : temp) {
+                        if (offsetItem.id.equals(id)) {
+                            return offsetItem.myOffset+8;
+                        }
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+
     public void insertField(String id, String scope, String type, int j) throws Exception{//simple insert that checks if it already exists or not
         if(!fields.containsKey(id)){
             fields.put(id, new HashMap<String, List<String>>());

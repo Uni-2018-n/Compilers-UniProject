@@ -57,12 +57,18 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
             t1c2= Integer.parseInt(t1.substring(t1.lastIndexOf("%_")+2));
         }else{
             t1c= regC++;
+            int t1cc = regC++;
             t1c2= regC++;
             if(lookUp(t1, argu)){//check if variable is declared inside the function
                 fin +=
                         "%_"+t1c2+" = load i32, i32* %"+t1+"\n";
-            }else{//TODO: case variable is a field
-
+            }else{
+                String type = getDeclarationVar(t1, argu);
+                int offset = firstV.getOffset(t1, argu, false);
+                fin +=
+                    "%_"+t1c+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                    "%_"+t1cc+" = bitcast i8* %_"+t1c+" to i32*\n"+
+                    "%_"+t1c2+ " = load i32, i32* %_"+t1cc+"\n";
             }
         }
 
@@ -80,12 +86,18 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
             t2c2= Integer.parseInt(t2.substring(t2.lastIndexOf("%_")+2));
         }else{
             t2c= regC++;
+            int t2cc = regC++;
             t2c2= regC++;
             if(lookUp(t2, argu)){//check if variable is declared inside the function
                 fin +=
                         "%_"+t2c2+" = load i32, i32* %"+t2+"\n";
-            }else{//TODO: case variable is a field
-
+            }else{
+                String type = getDeclarationVar(t1, argu);
+                int offset = firstV.getOffset(t1, argu, false);
+                fin +=
+                        "%_"+t2c+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                                "%_"+t2cc+" = bitcast i8* %_"+t2c+" to i32*\n"+
+                                "%_"+t2c2+ " = load i32, i32* %_"+t2cc+"\n";
             }
         }
 
@@ -427,6 +439,19 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
             String type = getDeclarationVar(id, argu);
             fin +=
                 "store "+type+" "+exprReg+", "+type+"* %"+id+"\n";
+        }else{
+            String type = getDeclarationVar(id, argu);
+            int offset = firstV.getOffset(id, argu, false);
+
+            int t1 = regC++;
+            int t2 = regC++;
+
+
+            fin +=
+                "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                "%_"+t2+" = bitcast i8* %_"+t1+" to "+type+"*\n"+
+                "store "+type+" "+exprReg+", "+type+"* %_"+t2+"\n";
+
         }
         out.write(fin);
         return null;
@@ -758,8 +783,15 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                     fin +=
                         "%_"+reg+" = load i1, i1* %"+t+"\n";
                 }
-            }else{//TODO: case variable is a field
-
+            }else{//TODO: see if isInt is needed.
+                int t1c = regC++;
+                int t1cc = regC++;
+                String type = getDeclarationVar(t, argu);
+                int offset = firstV.getOffset(t, argu, false);
+                fin +=
+                        "%_"+t1c+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                                "%_"+t1cc+" = bitcast i8* %_"+t1c+" to i32*\n"+
+                                "%_"+reg+ " = load i32, i32* %_"+t1cc+"\n";
             }
         }
         out.write(fin);
