@@ -202,7 +202,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
 
 
     String initStr = 
-    "declare i8* @calloc(i32, i32) \n" +
+    "declare i8* @calloc(i32, i32)\n" +
     "declare i32 @printf(i8*, ...)\n"+
     "declare void @exit(i32)\n"+
     "@_cint = constant [4 x i8] c\"%d\\0a\\00\"\n"+
@@ -274,7 +274,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     public String visit(ClassDeclaration n, String argu) throws Exception {
         String _ret=null;
         String id = n.f1.accept(this, argu);
-        // n.f3.accept(this, argu); //TODO: class var declaration
+        // n.f3.accept(this, argu); //no need for var declaration
         n.f4.accept(this, id);
         return _ret;
     }
@@ -293,7 +293,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String _ret=null;
         String id = n.f1.accept(this, argu);
         n.f3.accept(this, argu);
-        // n.f5.accept(this, argu); //TODO: class var declaration
+        // n.f5.accept(this, argu); //no need for var declaration
         n.f6.accept(this, id);
         return _ret;
     }
@@ -662,13 +662,12 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f3 -> "]"
      */
     public String visit(ArrayLookup n, String argu) throws Exception {
+        boolean isInt = argu.contains("::/::");
         if(argu.contains("::/::"))
             argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
+        String expr1 = n.f0.accept(this, argu);
+        String expr2 = n.f2.accept(this, argu);
         return _ret;
     }
 
@@ -818,8 +817,8 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      *       | FalseLiteral()
      *       | Identifier()
      *       | ThisExpression()//TODO:
-     *       | ArrayAllocationExpression()//TODO:
-     *       | AllocationExpression()//TODO:
+     *       | ArrayAllocationExpression()
+     *       | AllocationExpression()
      *       | BracketExpression()
      */
     public String visit(PrimaryExpression n, String argu) throws Exception {
@@ -906,6 +905,97 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
             return "i8*";
         }
         return n.f0.tokenImage;
+    }
+
+    /**
+     * f0 -> BooleanArrayAllocationExpression()
+     *       | IntegerArrayAllocationExpression()
+     */
+    public String visit(ArrayAllocationExpression n, String argu) throws Exception {
+        return n.f0.accept(this, argu);
+    }
+
+    /**
+     * f0 -> "new"
+     * f1 -> "boolean"
+     * f2 -> "["
+     * f3 -> Expression()
+     * f4 -> "]"
+     */
+    public String visit(BooleanArrayAllocationExpression n, String argu) throws Exception {
+        String expr = n.f3.accept(this, argu);
+        int t1 = regC++;
+        int t2 = regC++;
+        int t3 = regC++;
+        int t4 = regC++;
+        int l1 = labelC++;
+        int l2 = labelC++;
+        String fin =
+                "%_"+t1+" = icmp slt i32 "+expr+", 0\n"+
+                        "br i1 %_"+t1+", label %oob"+l1+", label %arr_alloc"+l2+"\n"+
+                        "oob"+l1+":\n"+
+                        "call void @throw_oob()\n"+
+                        "br label %arr_alloc"+l2+"\n"+
+                        "arr_alloc"+l2+":\n"+
+                        "%_"+t2+" = add i32 "+expr+", 1\n"+
+                        "%_"+t3+" = call i8* @calloc(i32 4, i32 %_"+t2+")\n"+
+                        "%_"+t4+" = bitcast i8* %_"+t3+" to i32*\n"+
+                        "store i32 "+expr+", i32* %_"+t4+"\n";
+        out.write(fin);
+        return "%_"+t4;
+    }
+
+    /**
+     * f0 -> "new"
+     * f1 -> "int"
+     * f2 -> "["
+     * f3 -> Expression()
+     * f4 -> "]"
+     */
+    public String visit(IntegerArrayAllocationExpression n, String argu) throws Exception {
+        String expr = n.f3.accept(this, argu);
+        int t1 = regC++;
+        int t2 = regC++;
+        int t3 = regC++;
+        int t4 = regC++;
+        int l1 = labelC++;
+        int l2 = labelC++;
+        String fin =
+                "%_"+t1+" = icmp slt i32 "+expr+", 0\n"+
+                "br i1 %_"+t1+", label %oob"+l1+", label %arr_alloc"+l2+"\n"+
+            "oob"+l1+":\n"+
+                "call void @throw_oob()\n"+
+                "br label %arr_alloc"+l2+"\n"+
+            "arr_alloc"+l2+":\n"+
+                "%_"+t2+" = add i32 "+expr+", 1\n"+
+                "%_"+t3+" = call i8* @calloc(i32 4, i32 %_"+t2+")\n"+
+                "%_"+t4+" = bitcast i8* %_"+t3+" to i32*\n"+
+                "store i32 "+expr+", i32* %_"+t4+"\n";
+        out.write(fin);
+        return "%_"+t4;
+    }
+
+    /**
+     * f0 -> "new"
+     * f1 -> Identifier()
+     * f2 -> "("
+     * f3 -> ")"
+     */
+    public String visit(AllocationExpression n, String argu) throws Exception {
+        String id = n.f1.accept(this, argu);
+        int offset = firstV.getOffsetLast(id, false);
+        int funcsLen = firstV.getOffsetLen(id, true);
+
+        int t1 = regC++;
+        int t2 = regC++;
+        int t3 = regC++;
+        String fin =
+                "%_"+t1+" = call i8* @calloc(i32 1, i32 "+(offset+8)+")\n"+
+                "%_"+t2+" = bitcast i8* %_"+t1+" to i8***\n"+
+                "%_"+t3+" = getelementptr ["+funcsLen+" x i8*], ["+funcsLen+" x i8*]* @."+id+"_vtable, i32 0, i32 0\n"+
+                "store i8** %_"+t3+", i8*** %_"+t2+"\n";
+        out.write(fin);
+        return "%_"+t1;
     }
 
     /**
