@@ -416,7 +416,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     /**
      * f0 -> Block()
      *       | AssignmentStatement()
-     *       | ArrayAssignmentStatement()//TODO:
+     *       | ArrayAssignmentStatement()
      *       | IfStatement()
      *       | WhileStatement()
      *       | PrintStatement()
@@ -437,21 +437,29 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String fin ="";
         if(lookUp(id, argu)){
             String type = getDeclarationVar(id, argu);
-            fin +=
-                "store "+type+" "+exprReg+", "+type+"* %"+id+"\n";
+            if(type.contains("*")){
+                fin +=
+                    "store i32* "+exprReg+", i32** %"+id+"\n";
+            }else{
+                fin +=
+                        "store i32 "+exprReg+", i32* %"+id+"\n";
+            }
         }else{
-            String type = getDeclarationVar(id, argu);
             int offset = firstV.getOffset(id, argu, false);
-
+            String type = getDeclarationVar(id, argu);
             int t1 = regC++;
             int t2 = regC++;
-
-
-            fin +=
-                "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
-                "%_"+t2+" = bitcast i8* %_"+t1+" to "+type+"*\n"+
-                "store "+type+" "+exprReg+", "+type+"* %_"+t2+"\n";
-
+            if(type.contains("*")){
+                fin +=
+                    "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                    "%_"+t2+" = bitcast i8* %_"+t1+" to i32**\n"+
+                    "store i32* "+exprReg+", i32** %_"+t2+"\n";
+            }else{
+                fin +=
+                    "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                    "%_"+t2+" = bitcast i8* %_"+t1+" to i32**\n"+
+                    "store i32 "+exprReg+", i32* %_"+t2+"\n";
+            }
         }
         out.write(fin);
         return null;
@@ -468,13 +476,108 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(ArrayAssignmentStatement n, String argu) throws Exception {
         String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
-        n.f4.accept(this, argu);
-        n.f5.accept(this, argu);
-        n.f6.accept(this, argu);
+        String id = n.f0.accept(this, argu);
+        String expr1 = n.f2.accept(this, argu);
+        String expr2 = n.f5.accept(this, argu);
+        String fin = "";
+        int t1 = regC++;
+        int t2 = regC++;
+        int t3 = regC++;
+        int t4 = regC++;
+        int t5 = regC++;
+        int l1 = labelC++;
+        int l2 = labelC++;
+        int l3 = labelC++;
+        if(lookUp(id, argu)){
+            String type = getDeclarationVar(id, argu);
+            if(type.contains("i32")){
+                fin +=
+                    "%_"+t1+" = load i32*, i32** %"+id+"\n"+
+                    "%_"+t2+" = load i32, i32* %_"+t1+"\n"+
+                    "%_"+t3+" = icmp ult i32 "+expr1+", %_"+t2+"\n"+
+                    "br i1 %_"+t3+", label %oob"+l1+", label %oob"+l2+"\n"+
+                "oob"+l1+":\n"+
+                    "%_"+t4+" = add i32 "+expr1+", 1\n"+
+                    "%_"+t5+" = getelementptr i32, i32* %_"+t1+", i32 %_"+t4+"\n"+
+                    "store i32 "+expr2+", i32* %_"+t5+"\n"+
+                    "br label %oob"+l3+"\n"+
+                "oob"+l2+":\n"+
+                    "call void @throw_oob()\n"+
+                    "br label %oob"+l3+"\n"+
+                "oob"+l3+":\n";
+            }else if(type.contains("i1")){
+                int t6 = regC++;
+                int t7 = regC++;
+                int t8 = regC++;
+                fin +=
+                    "%_"+t1+" = load i32*, i32** %"+id+"\n"+
+                    "%_"+t2+" = load i32, i32* %_"+t1+"\n"+
+                    "%_"+t3+" = icmp ult i32 "+expr1+", %_"+t2+"\n"+
+                    "br i1 %_"+t3+", label %oob"+l1+", label %oob"+l2+"\n"+
+                "oob"+l1+":\n"+
+                    "%_"+t4+" = add i32 "+expr1+", 1\n"+
+                    "%_"+t5+" = getelementptr i32, i32* %_"+t1+", i32 %_"+t4+"\n"+
+                    "%_"+t6+" = alloca i1\n"+
+                    "store i1 "+expr2+", i1* %_"+t6+"\n"+
+                    "%_"+t7+" = bitcast i1* %_"+t6+" to i32*\n"+
+                    "%_"+t8+" = load i32, i32* %_"+t7+"\n"+
+                    "store i32 %_"+t8+", i32* %_"+t5+"\n"+
+                    "br label %oob"+l3+"\n"+
+                "oob"+l2+":\n"+
+                    "call void @throw_oob()\n"+
+                    "br label %oob"+l3+"\n"+
+                "oob"+l3+":\n";
+            }
+        }else{
+            int offset = firstV.getOffset(id, argu, false);
+            String type = getDeclarationVar(id, argu);
+            int t6 = regC++;
+            int t7 = regC++;
+            if(type.contains("i32")){
+                fin +=
+                        "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                        "%_"+t2+" = bitcast i8* %_"+t1+" to i32**\n"+
+                        "%_"+t3+" = load i32*, i32** %_"+t2+"\n"+
+                        "%_"+t4+" = load i32, i32* %_"+t3+"\n"+
+                        "%_"+t5+" = icmp ult i32 "+expr1+", %_"+t4+"\n"+
+                        "br i1 %_"+t5+", label %oob"+l1+", label %oob"+l2+"\n"+
+                    "oob"+l1+":\n"+
+                        "%_"+t6+" = add i32 "+expr1+", 1\n"+
+                        "%_"+t7+" = getelementptr i32, i32* %_"+t3+", i32 %_"+t6+"\n"+
+                        "store i32 "+expr2+", i32* %_"+t7+"\n"+
+                        "br label %oob"+l3+"\n"+
+                    "oob"+l2+":\n"+
+                        "call void @throw_oob()\n"+
+                        "br label %oob"+l3+"\n"+
+                    "oob"+l3+":\n";
+
+            }else if(type.contains("i1")){
+                int t8 = regC++;
+                int t9 = regC++;
+                int t10 = regC++;
+                fin +=""+
+                        "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                        "%_"+t2+" = bitcast i8* %_"+t1+" to i32**\n"+
+                        "%_"+t3+" = load i32*, i32** %_"+t2+"\n"+
+                        "%_"+t4+" = load i32, i32* %_"+t3+"\n"+
+                        "%_"+t5+" = icmp ult i32 "+expr1+", %_"+t4+"\n"+
+                        "br i1 %_"+t5+", label %oob"+l1+", label %oob"+l2+"\n"+
+                    "oob"+l1+":\n"+
+                        "%_"+t6+" = add i32 "+expr1+", 1\n"+
+                        "%_"+t7+" = getelementptr i32, i32* %_"+t3+", i32 %_"+t6+"\n"+
+                        "%_"+t8+" = alloca i1\n"+
+                        "store i1 "+expr2+", i1* %_"+t8+"\n"+
+                        "%_"+t9+" = bitcast i1* %_"+t8+" to i32*\n"+
+                        "%_"+t10+" = load i32, i32* %_"+t9+"\n"+
+                        "store i32 %_"+t10+", i32* %_"+t7+"\n"+
+                        "br label %oob"+l3+"\n"+
+                    "oob"+l2+":\n"+
+                        "call void @throw_oob()\n"+
+                        "br label %oob"+l3+"\n"+
+                    "oob"+l3+":\n";
+            }
+        }
+        out.write(fin);
         return _ret;
     }
 
@@ -564,7 +667,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      *       | MinusExpression()
      *       | TimesExpression()
      *       | ArrayLookup()//TODO:
-     *       | ArrayLength()//TODO:
+     *       | ArrayLength()
      *       | MessageSend()//TODO:
      *       | Clause()
      */
@@ -680,10 +783,30 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         if(argu.contains("::/::"))
             argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        return _ret;
+        String expr = n.f0.accept(this, argu);
+        String fin = "";
+        int t1 = regC++;
+        if(expr.contains("%")){
+            fin =
+                "%_"+t1+" = load i32, i32* "+expr+"\n";
+        }else if(lookUp(expr, argu)){
+            int t2 = regC++;
+            fin =
+                "%_"+t2+" = load i32*, i32** %"+expr+"\n"+
+                "%_"+t1+" = load i32, i32* %_"+t2+"\n";
+        }else{
+            int offset = firstV.getOffset(expr, argu, false);
+            int t2 = regC++;
+            int t3 = regC++;
+            int t4 = regC++;
+            fin =
+                "%_"+t2+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                "%_"+t3+" = bitcast i8* %_12 to i32**\n"+
+                "%_"+t4+" = load i32*, i32** %_"+t3+"\n"+
+                "%_"+t1+" = load i32, i32* %_"+t4+"\n";
+        }
+        out.write(fin);
+        return "%_"+t1;
     }
 
     /**
@@ -850,7 +973,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
       * f2 -> "]"
       */
      public String visit(BooleanArrayType n, String argu) throws Exception {
-        return "i1*";
+        return "i32*";
      }
   
      /**
