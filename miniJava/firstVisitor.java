@@ -144,7 +144,7 @@ public class firstVisitor extends GJDepthFirst<String, String> {
                     LinkedList<offsetItem> temp = offsets.get(tempName).functions;
                     for (offsetItem offsetItem : temp) {
                         if (offsetItem.id.equals(id)) {
-                            return offsetItem.myOffset+8;
+                            return offsetItem.myOffset;
                         }
                     }
                 } else {

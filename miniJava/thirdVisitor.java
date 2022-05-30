@@ -176,6 +176,28 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         }
     }
 
+    public String getDeclarationFunc(String id, String className){
+        while(true){
+            String retType = firstV.lookUp(id, className, 1);
+            if(retType == null){
+                if(className.contains("::")){
+                    className = className.substring(0, className.lastIndexOf("::"));
+                }
+            }else if(retType.equals("int")){
+                return "i32";
+            }else if(retType.equals("bool")){
+                return "i1";
+            }else if(retType.equals("intArray")){
+                return "i32*";
+            }else if(retType.equals("boolArray")){
+                return "i1*";
+            }else{
+                return "i8*";
+            }
+
+        }
+    }
+
 
 
     /**
@@ -798,7 +820,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f3 -> "]"
      */
     public String visit(ArrayLookup n, String argu) throws Exception {
-        boolean isBool = argu.contains("::/::");
+        boolean isBool = argu.contains("::/::bool");
         if(argu.contains("::/::"))
             argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String _ret=null;
@@ -1015,12 +1037,53 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         if(argu.contains("::/::"))
             argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
-        n.f4.accept(this, argu);
-        n.f5.accept(this, argu);
+        String expr = n.f0.accept(this, argu);
+        String id = n.f2.accept(this, argu);
+        String args = n.f4.accept(this, argu);
+        String fin = "";
+        if(expr.contains("%")){
+            String className = expr.substring(0, expr.indexOf("::/::"));
+            expr = expr.substring(expr.indexOf("::/::")+5);
+            int offset = firstV.getOffset(id, className, true);
+            String type = getDeclarationFunc(id, firstV.classesLookup(className));
+            String declaredArgs = getDeclaration(id, className);
+            declaredArgs = declaredArgs.substring(0, declaredArgs.lastIndexOf(" @"));
+            int t1 = regC++;
+            int t2 = regC++;
+            int t3 = regC++;
+            int t4 = regC++;
+            int t5 = regC++;
+            int t6 = regC++;
+            fin +=
+                "%_"+t1+" = bitcast i8* "+expr+" to i8***\n"+
+                "%_"+t2+" = load i8**, i8*** %_"+t1+"\n"+
+                "%_"+t3+" = getelementptr i8*, i8** %_"+t2+", i32 "+offset+"\n"+
+                "%_"+t4+" = load i8*, i8** %_"+t3+"\n"+
+                "%_"+t5+" = bitcast i8* %_"+t4+" to "+declaredArgs+"\n"+
+                "%_"+t6+" = call "+type+" %_"+t5+"(i8* "+expr;
+            if(declaredArgs.contains(",")){
+                declaredArgs = declaredArgs.substring(declaredArgs.indexOf(",")+1);
+                declaredArgs = declaredArgs.substring(0, declaredArgs.length()-2);
+                while(declaredArgs.contains(",")){
+                    String temp = declaredArgs.substring(0, declaredArgs.indexOf(","));
+                    String valueTemp = args.substring(0, args.indexOf("::"));
+                    fin += ", "+temp+" "+valueTemp;
+                    declaredArgs = declaredArgs.substring(declaredArgs.indexOf(",")+1);
+                    args = args.substring(args.indexOf("::")+2);
+                }
+                System.out.println(declaredArgs+": "+args);
+                fin += ", "+temp+" "+valueTemp+")\n";
+            }else{
+                fin +=")\n";
+            }
+        }else{//TODO: case we call function of member or of an object
+            if(lookUp(id, argu)){
+
+            }else{
+
+            }
+        }
+        out.write(fin);
         return _ret;
     }
 
@@ -1029,10 +1092,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f1 -> ExpressionTail()
      */
     public String visit(ExpressionList n, String argu) throws Exception {
-        String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        return _ret;
+        return n.f0.accept(this, argu)+n.f1.accept(this, argu);
     }
 
     /**
@@ -1047,10 +1107,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f1 -> Expression()
      */
     public String visit(ExpressionTerm n, String argu) throws Exception {
-        String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        return _ret;
+        return "::"+n.f1.accept(this, argu);
     }
 
     /**
@@ -1329,7 +1386,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 "%_"+t3+" = getelementptr ["+funcsLen+" x i8*], ["+funcsLen+" x i8*]* @."+id+"_vtable, i32 0, i32 0\n"+
                 "store i8** %_"+t3+", i8*** %_"+t2+"\n";
         out.write(fin);
-        return "%_"+t1;
+        return id+"::/::%_"+t1;
     }
 
     /**
