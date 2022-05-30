@@ -454,6 +454,10 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                     fin +=
                             "store i1 "+exprReg+", i1* %"+id+"\n";
                 }
+            }else if(type.contains("i8")){
+                String exprReg = n.f2.accept(this, argu);
+                fin +=
+                        "store i8* "+exprReg+", i8** %"+id+"\n";
             }
         }else{
             int offset = firstV.getOffset(id, argu, false);
@@ -461,11 +465,19 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
             int t1 = regC++;
             int t2 = regC++;
             if(type.contains("*")){
-                String exprReg = n.f2.accept(this, argu);
-                fin +=
-                    "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
-                    "%_"+t2+" = bitcast i8* %_"+t1+" to i32**\n"+
-                    "store i32* "+exprReg+", i32** %_"+t2+"\n";
+                if(type.contains("i8")){
+                    String exprReg = n.f2.accept(this, argu);
+                    fin +=
+                        "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                        "%_"+t2+" = bitcast i8* %_"+t1+" to i8**\n"+
+                        "store i8* "+exprReg+", i8** %_"+t2+"\n";
+                }else{
+                    String exprReg = n.f2.accept(this, argu);
+                    fin +=
+                        "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                        "%_"+t2+" = bitcast i8* %_"+t1+" to i32**\n"+
+                        "store i32* "+exprReg+", i32** %_"+t2+"\n";
+                }
             }else{
                 if(type.contains("i32")){
                     String exprReg = n.f2.accept(this, argu);
@@ -1131,7 +1143,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      *       | TrueLiteral()
      *       | FalseLiteral()
      *       | Identifier()
-     *       | ThisExpression()//TODO:
+     *       | ThisExpression()//TODO:done with assignment, only messageSent
      *       | ArrayAllocationExpression()
      *       | AllocationExpression()
      *       | BracketExpression()
@@ -1220,6 +1232,13 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
             return "i8*";
         }
         return n.f0.tokenImage;
+    }
+
+    /**
+        * f0 -> "this"
+        */
+    public String visit(ThisExpression n, String argu) throws Exception {
+        return "%this";
     }
 
     /**
