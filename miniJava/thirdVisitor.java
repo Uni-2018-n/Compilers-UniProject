@@ -437,12 +437,22 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String fin ="";
         if(lookUp(id, argu)){
             String type = getDeclarationVar(id, argu);
-            if(type.contains("*")){
-                fin +=
-                    "store i32* "+exprReg+", i32** %"+id+"\n";
-            }else{
-                fin +=
-                        "store i32 "+exprReg+", i32* %"+id+"\n";
+            if(type.contains("i32")){
+                if(type.contains("*")){
+                    fin +=
+                        "store i32* "+exprReg+", i32** %"+id+"\n";
+                }else{
+                    fin +=
+                            "store i32 "+exprReg+", i32* %"+id+"\n";
+                }
+            }else if(type.contains("i1")){
+                if(type.contains("*")){
+                    fin +=
+                            "store i32* "+exprReg+", i32** %"+id+"\n";
+                }else{
+                    fin +=
+                            "store i1 "+exprReg+", i1* %"+id+"\n";
+                }
             }
         }else{
             int offset = firstV.getOffset(id, argu, false);
@@ -455,10 +465,17 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                     "%_"+t2+" = bitcast i8* %_"+t1+" to i32**\n"+
                     "store i32* "+exprReg+", i32** %_"+t2+"\n";
             }else{
-                fin +=
-                    "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
-                    "%_"+t2+" = bitcast i8* %_"+t1+" to i32**\n"+
-                    "store i32 "+exprReg+", i32* %_"+t2+"\n";
+                if(type.contains("i32")){
+                    fin +=
+                        "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                        "%_"+t2+" = bitcast i8* %_"+t1+" to i32*\n"+
+                        "store i32 "+exprReg+", i32* %_"+t2+"\n";
+                }else if(type.contains("i1")){
+                    fin +=
+                        "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                        "%_"+t2+" = bitcast i8* %_"+t1+" to i1*\n"+
+                        "store i1 "+exprReg+", i1* %_"+t2+"\n";
+                }
             }
         }
         out.write(fin);
@@ -488,7 +505,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         int l1 = labelC++;
         int l2 = labelC++;
         int l3 = labelC++;
-        if(lookUp(id, argu)){
+        if(lookUp(id, argu)){//TODO: check (new int[5])[0]
             String type = getDeclarationVar(id, argu);
             if(type.contains("i32")){
                 fin +=
@@ -666,7 +683,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      *       | PlusExpression()
      *       | MinusExpression()
      *       | TimesExpression()
-     *       | ArrayLookup()//TODO:
+     *       | ArrayLookup()
      *       | ArrayLength()
      *       | MessageSend()//TODO:
      *       | Clause()
@@ -769,9 +786,125 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         if(argu.contains("::/::"))
             argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String _ret=null;
-        String expr1 = n.f0.accept(this, argu);
+        String id = n.f0.accept(this, argu);
         String expr2 = n.f2.accept(this, argu);
-        return _ret;
+        String tFin2;
+        String fin = "";
+        String tFin1 = "%_"+regC++;
+        if(expr2.contains("%")){
+            tFin2 = expr2;
+        }else if(lookUp(expr2, argu)){
+            int reg = regC++;
+            tFin2 = "%_"+reg;
+            fin =
+                tFin2+" = load i32, i32* %"+expr2+"\n";
+            out.write(fin);
+        }else{
+            int t1c = regC++;
+            int t1cc = regC++;
+            int reg = regC++;
+            int offset = firstV.getOffset(expr2, argu, false);
+            fin =
+                "%_"+t1c+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                "%_"+t1cc+" = bitcast i8* %_"+t1c+" to i32*\n"+
+                "%_"+reg+ " = load i32, i32* %_"+t1cc+"\n";
+            tFin2 = "%_"+reg;
+            out.write(fin);
+        }
+
+        int t1 = regC++;
+        int t2 = regC++;
+        int t3 = regC++;
+        int t4 = regC++;
+        int t5 = regC++;
+        int l1 = labelC++;
+        int l2 = labelC++;
+        int l3 = labelC++;
+
+        if(lookUp(id, argu)){
+            String type = getDeclarationVar(id, argu);
+            if(type.contains("i32")){
+                fin =
+                        "%_"+t1+" = load i32*, i32** %"+id+"\n"+
+                                "%_"+t2+" = load i32, i32* %_"+t1+"\n"+
+                                "%_"+t3+" = icmp ult i32 "+tFin2+", %_"+t2+"\n"+
+                                "br i1 %_"+t3+", label %oob"+l1+", label %oob"+l2+"\n"+
+                                "oob"+l1+":\n"+
+                                "%_"+t4+" = add i32 "+tFin2+", 1\n"+
+                                "%_"+t5+" = getelementptr i32, i32* %_"+t1+", i32 %_"+t4+"\n"+
+                                tFin1+" = load i32, i32* %_"+t5+"\n"+
+                                "br label %oob"+l3+"\n"+
+                                "oob"+l2+":\n"+
+                                "call void @throw_oob()\n"+
+                                "br label %oob"+l3+"\n"+
+                                "oob"+l3+":\n";
+            }else if(type.contains("i1")){
+                int t7 = regC++;
+                int t8 = regC++;
+                fin =
+                        "%_"+t1+" = load i32*, i32** %"+id+"\n"+
+                                "%_"+t2+" = load i32, i32* %_"+t1+"\n"+
+                                "%_"+t3+" = icmp ult i32 "+tFin2+", %_"+t2+"\n"+
+                                "br i1 %_"+t3+", label %oob"+l1+", label %oob"+l2+"\n"+
+                                "oob"+l1+":\n"+
+                                "%_"+t4+" = add i32 "+tFin2+", 1\n"+
+                                "%_"+t5+" = getelementptr i32, i32* %_"+t1+", i32 %_"+t4+"\n"+
+                                "%_"+t8+" = bitcast i32* %_"+t5+" to i1*\n"+
+                                tFin1+" = load i1, i1* %_"+t8+"\n"+
+                                "br label %oob"+l3+"\n"+
+                                "oob"+l2+":\n"+
+                                "call void @throw_oob()\n"+
+                                "br label %oob"+l3+"\n"+
+                                "oob"+l3+":\n";
+            }
+        }else{
+            int offset = firstV.getOffset(id, argu, false);
+            String type = getDeclarationVar(id, argu);
+            int t6 = regC++;
+            int t7 = regC++;
+            if(type.contains("i32")){
+                fin =
+                        "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                                "%_"+t2+" = bitcast i8* %_"+t1+" to i32**\n"+
+                                "%_"+t3+" = load i32*, i32** %_"+t2+"\n"+
+                                "%_"+t4+" = load i32, i32* %_"+t3+"\n"+
+                                "%_"+t5+" = icmp ult i32 "+tFin2+", %_"+t4+"\n"+
+                                "br i1 %_"+t5+", label %oob"+l1+", label %oob"+l2+"\n"+
+                                "oob"+l1+":\n"+
+                                "%_"+t6+" = add i32 "+tFin2+", 1\n"+
+                                "%_"+t7+" = getelementptr i32, i32* %_"+t3+", i32 %_"+t6+"\n"+
+                                tFin1+" = load i32, i32* %_"+t7+"\n"+
+                                "br label %oob"+l3+"\n"+
+                                "oob"+l2+":\n"+
+                                "call void @throw_oob()\n"+
+                                "br label %oob"+l3+"\n"+
+                                "oob"+l3+":\n";
+
+            }else if(type.contains("i1")){
+                int t11 = regC++;
+                fin =""+
+                        "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                        "%_"+t2+" = bitcast i8* %_"+t1+" to i32**\n"+
+                        "%_"+t3+" = load i32*, i32** %_"+t2+"\n"+
+                        "%_"+t4+" = load i32, i32* %_"+t3+"\n"+
+                        "%_"+t5+" = icmp ult i32 "+tFin2+", %_"+t4+"\n"+
+                        "br i1 %_"+t5+", label %oob"+l1+", label %oob"+l2+"\n"+
+                        "oob"+l1+":\n"+
+                        "%_"+t6+" = add i32 "+tFin2+", 1\n"+
+                        "%_"+t7+" = getelementptr i32, i32* %_"+t3+", i32 %_"+t6+"\n"+
+                        "%_"+t11+" = bitcast i32* %_"+t7+" to i1*\n"+
+                        tFin1+" = load i1, i1* %_"+t11+"\n"+
+                        "br label %oob"+l3+"\n"+
+                        "oob"+l2+":\n"+
+                        "call void @throw_oob()\n"+
+                        "br label %oob"+l3+"\n"+
+                        "oob"+l3+":\n";
+            }
+        }
+
+        out.write(fin);
+
+        return tFin1;
     }
 
     /**
@@ -898,22 +1031,32 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         }else{
             reg = regC++;
             if(lookUp(t, argu)){//check if variable is declared inside the function
-                if(isInt){
+                String type = getDeclarationVar(t, argu);
+                if(type.contains("i32")){
                     fin +=
                         "%_"+reg+" = load i32, i32* %"+t+"\n";
-                }else{
+                }else if(type.contains("i1")){
+                    System.out.println("test");
                     fin +=
                         "%_"+reg+" = load i1, i1* %"+t+"\n";
                 }
-            }else{//TODO: see if isInt is needed.
+            }else{
                 int t1c = regC++;
                 int t1cc = regC++;
                 String type = getDeclarationVar(t, argu);
                 int offset = firstV.getOffset(t, argu, false);
-                fin +=
+                if(type.contains("i32")){
+                    fin +=
                         "%_"+t1c+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
-                                "%_"+t1cc+" = bitcast i8* %_"+t1c+" to i32*\n"+
-                                "%_"+reg+ " = load i32, i32* %_"+t1cc+"\n";
+                        "%_"+t1cc+" = bitcast i8* %_"+t1c+" to i32*\n"+
+                        "%_"+reg+ " = load i32, i32* %_"+t1cc+"\n";
+
+                }else if(type.contains("i1")){
+                    fin +=
+                        "%_"+t1c+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                        "%_"+t1cc+" = bitcast i8* %_"+t1c+" to i1*\n"+
+                        "%_"+reg+ " = load i1, i1* %_"+t1cc+"\n";
+                }
             }
         }
         out.write(fin);
