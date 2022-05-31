@@ -744,7 +744,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      *       | TimesExpression()
      *       | ArrayLookup()
      *       | ArrayLength()
-     *       | MessageSend()//TODO:
+     *       | MessageSend()
      *       | Clause()
      */
     public String visit(Expression n, String argu) throws Exception {
@@ -909,7 +909,6 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                     "call void @throw_oob()\n"+
                     "br label %oob"+l3+"\n"+
                     "oob"+l3+":\n";
-                    System.out.println("test");
             }else{
                 fin =
                     "%_"+t1+" = load i32, i32* "+id+"\n"+
@@ -1066,7 +1065,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         if(expr.contains("%")){
             String className = expr.substring(0, expr.indexOf("::/::"));
             expr = expr.substring(expr.indexOf("::/::")+5);
-            int offset = firstV.getOffset(id, className, true);
+            int offset = firstV.getOffset(id, className, true)/8;
             String type = getDeclarationFunc(id, firstV.classesLookup(className));
             String declaredArgs = getDeclaration(id, className);
             declaredArgs = declaredArgs.substring(0, declaredArgs.lastIndexOf(" @"));
@@ -1099,7 +1098,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         }else{
             if(lookUp(expr, argu)){
                 String className = firstV.lookUp(expr, argu, 0);
-                int offset = firstV.getOffset(id, className, true);
+                int offset = firstV.getOffset(id, className, true)/8;
                 String type = getDeclarationFunc(id, firstV.classesLookup(className));
                 String declaredArgs = getDeclaration(id, className);
                 declaredArgs = declaredArgs.substring(0, declaredArgs.lastIndexOf(" @"));
@@ -1131,14 +1130,15 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 }else{
                     fin +=")\n";
                 }
-            }else{//TODO: case we call function of member, this gets segmetation fault...
-                String className = firstV.lookUp(expr, argu, 0);
-                int offset = firstV.getOffset(id, className, true);
-                String type = getDeclarationFunc(id, firstV.classesLookup(className));
-                String declaredArgs = getDeclaration(id, className);
+            }else{
+                String className = firstV.lookUp(expr, argu, 0);//of i
+                int myOffset = firstV.getOffset(expr, argu, false);//offset of i
+                int offset = firstV.getOffset(id, className, true)/8;//offset of test
+                String type = getDeclarationFunc(id, firstV.classesLookup(className));//type of test
+                String declaredArgs = getDeclaration(id, className);//arguments of test
                 declaredArgs = declaredArgs.substring(0, declaredArgs.lastIndexOf(" @"));
-
-                int myOffset = firstV.getOffset(expr, argu, false);
+                System.out.println("test:"+ myOffset);
+                System.out.println(offset);
                 int t1 = regC++;
                 int t2 = regC++;
                 int t3 = regC++;
@@ -1253,7 +1253,6 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                     fin +=
                         "%_"+reg+" = load i32, i32* %"+t+"\n";
                 }else if(type.contains("i1")){
-                    System.out.println("test");
                     fin +=
                         "%_"+reg+" = load i1, i1* %"+t+"\n";
                 }
