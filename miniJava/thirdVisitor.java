@@ -460,6 +460,9 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
             String type = getDeclarationVar(id, argu);
             if(type.contains("i32")){
                 String exprReg = n.f2.accept(this, argu);
+                if(exprReg.contains("::/::")){
+                    exprReg = exprReg.substring(exprReg.indexOf("::/::")+5);
+                }
                 if(type.contains("*")){
                     fin +=
                         "store i32* "+exprReg+", i32** %"+id+"\n";
@@ -469,6 +472,9 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 }
             }else if(type.contains("i1")){
                 String exprReg = n.f2.accept(this, argu+"::/::bool");
+                if(exprReg.contains("::/::")){
+                    exprReg = exprReg.substring(exprReg.indexOf("::/::")+5);
+                }
                 if(type.contains("*")){
                     fin +=
                             "store i32* "+exprReg+", i32** %"+id+"\n";
@@ -478,6 +484,9 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 }
             }else if(type.contains("i8")){
                 String exprReg = n.f2.accept(this, argu);
+                if(exprReg.contains("::/::")){
+                    exprReg = exprReg.substring(exprReg.indexOf("::/::")+5);
+                }
                 fin +=
                         "store i8* "+exprReg+", i8** %"+id+"\n";
             }
@@ -489,12 +498,18 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
             if(type.contains("*")){
                 if(type.contains("i8")){
                     String exprReg = n.f2.accept(this, argu);
+                    if(exprReg.contains("::/::")){
+                        exprReg = exprReg.substring(exprReg.indexOf("::/::")+5);
+                    }
                     fin +=
                         "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
                         "%_"+t2+" = bitcast i8* %_"+t1+" to i8**\n"+
                         "store i8* "+exprReg+", i8** %_"+t2+"\n";
                 }else{
                     String exprReg = n.f2.accept(this, argu);
+                    if(exprReg.contains("::/::")){
+                        exprReg = exprReg.substring(exprReg.indexOf("::/::")+5);
+                    }
                     fin +=
                         "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
                         "%_"+t2+" = bitcast i8* %_"+t1+" to i32**\n"+
@@ -503,12 +518,18 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
             }else{
                 if(type.contains("i32")){
                     String exprReg = n.f2.accept(this, argu);
+                    if(exprReg.contains("::/::")){
+                        exprReg = exprReg.substring(exprReg.indexOf("::/::")+5);
+                    }
                     fin +=
                         "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
                         "%_"+t2+" = bitcast i8* %_"+t1+" to i32*\n"+
                         "store i32 "+exprReg+", i32* %_"+t2+"\n";
                 }else if(type.contains("i1")){
                     String exprReg = n.f2.accept(this, argu+"::/::bool");
+                    if(exprReg.contains("::/::")){
+                        exprReg = exprReg.substring(exprReg.indexOf("::/::")+5);
+                    }
                     fin +=
                         "%_"+t1+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
                         "%_"+t2+" = bitcast i8* %_"+t1+" to i1*\n"+
@@ -1041,6 +1062,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String id = n.f2.accept(this, argu);
         String args = n.f4.accept(this, argu);
         String fin = "";
+        int tFin = regC++;
         if(expr.contains("%")){
             String className = expr.substring(0, expr.indexOf("::/::"));
             expr = expr.substring(expr.indexOf("::/::")+5);
@@ -1053,14 +1075,13 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
             int t3 = regC++;
             int t4 = regC++;
             int t5 = regC++;
-            int t6 = regC++;
             fin +=
                 "%_"+t1+" = bitcast i8* "+expr+" to i8***\n"+
                 "%_"+t2+" = load i8**, i8*** %_"+t1+"\n"+
                 "%_"+t3+" = getelementptr i8*, i8** %_"+t2+", i32 "+offset+"\n"+
                 "%_"+t4+" = load i8*, i8** %_"+t3+"\n"+
                 "%_"+t5+" = bitcast i8* %_"+t4+" to "+declaredArgs+"\n"+
-                "%_"+t6+" = call "+type+" %_"+t5+"(i8* "+expr;
+                "%_"+tFin+" = call "+type+" %_"+t5+"(i8* "+expr;
             if(declaredArgs.contains(",")){
                 declaredArgs = declaredArgs.substring(declaredArgs.indexOf(",")+1);
                 declaredArgs = declaredArgs.substring(0, declaredArgs.length()-2);
@@ -1071,20 +1092,92 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                     declaredArgs = declaredArgs.substring(declaredArgs.indexOf(",")+1);
                     args = args.substring(args.indexOf("::")+2);
                 }
-                System.out.println(declaredArgs+": "+args);
-                fin += ", "+temp+" "+valueTemp+")\n";
+                fin += ", "+declaredArgs+" "+args+")\n";
             }else{
                 fin +=")\n";
             }
-        }else{//TODO: case we call function of member or of an object
-            if(lookUp(id, argu)){
+        }else{
+            if(lookUp(expr, argu)){
+                String className = firstV.lookUp(expr, argu, 0);
+                int offset = firstV.getOffset(id, className, true);
+                String type = getDeclarationFunc(id, firstV.classesLookup(className));
+                String declaredArgs = getDeclaration(id, className);
+                declaredArgs = declaredArgs.substring(0, declaredArgs.lastIndexOf(" @"));
+                int t1 = regC++;
+                int t2 = regC++;
+                int t3 = regC++;
+                int t4 = regC++;
+                int t5 = regC++;
+                int t7 = regC++;
+                fin +=
+                    "%_"+t7+" = load i8*, i8** %"+expr+"\n"+
+                    "%_"+t1+" = bitcast i8* %_"+t7+" to i8***\n"+
+                    "%_"+t2+" = load i8**, i8*** %_"+t1+"\n"+
+                    "%_"+t3+" = getelementptr i8*, i8** %_"+t2+", i32 "+offset+"\n"+
+                    "%_"+t4+" = load i8*, i8** %_"+t3+"\n"+
+                    "%_"+t5+" = bitcast i8* %_"+t4+" to "+declaredArgs+"\n"+
+                    "%_"+tFin+" = call "+type+" %_"+t5+"(i8* %_"+t7;
+                if(declaredArgs.contains(",")){
+                    declaredArgs = declaredArgs.substring(declaredArgs.indexOf(",")+1);
+                    declaredArgs = declaredArgs.substring(0, declaredArgs.length()-2);
+                    while(declaredArgs.contains(",")){
+                        String temp = declaredArgs.substring(0, declaredArgs.indexOf(","));
+                        String valueTemp = args.substring(0, args.indexOf("::"));
+                        fin += ", "+temp+" "+valueTemp;
+                        declaredArgs = declaredArgs.substring(declaredArgs.indexOf(",")+1);
+                        args = args.substring(args.indexOf("::")+2);
+                    }
+                    fin += ", "+declaredArgs+" "+args+")\n";
+                }else{
+                    fin +=")\n";
+                }
+            }else{//TODO: case we call function of member, this gets segmetation fault...
+                String className = firstV.lookUp(expr, argu, 0);
+                int offset = firstV.getOffset(id, className, true);
+                String type = getDeclarationFunc(id, firstV.classesLookup(className));
+                String declaredArgs = getDeclaration(id, className);
+                declaredArgs = declaredArgs.substring(0, declaredArgs.lastIndexOf(" @"));
 
-            }else{
+                int myOffset = firstV.getOffset(expr, argu, false);
+                int t1 = regC++;
+                int t2 = regC++;
+                int t3 = regC++;
+                int t4 = regC++;
+                int t5 = regC++;
+                int t7 = regC++;
+                int t8 = regC++;
+                int t9 = regC++;
+                int t10 = regC++;
+                fin +=
+                    "%_"+t8+" = getelementptr i8, i8* %this, i32 "+myOffset+"\n"+
+                    "%_"+t9+" = bitcast i8* %_"+t8+" to i8**\n"+
+                    // "store i8* %_"+t10+", i8** %_"+t9+"\n"+
 
+                    "%_"+t7+" = load i8*, i8** %_"+t9+"\n"+
+                    "%_"+t1+" = bitcast i8* %_"+t7+" to i8***\n"+
+                    "%_"+t2+" = load i8**, i8*** %_"+t1+"\n"+
+                    "%_"+t3+" = getelementptr i8*, i8** %_"+t2+", i32 "+offset+"\n"+
+                    "%_"+t4+" = load i8*, i8** %_"+t3+"\n"+
+                    "%_"+t5+" = bitcast i8* %_"+t4+" to "+declaredArgs+"\n"+
+                    "%_"+tFin+" = call "+type+" %_"+t5+"(i8* %_"+t7;
+                if(declaredArgs.contains(",")){
+                    declaredArgs = declaredArgs.substring(declaredArgs.indexOf(",")+1);
+                    declaredArgs = declaredArgs.substring(0, declaredArgs.length()-2);
+                    while(declaredArgs.contains(",")){
+                        String temp = declaredArgs.substring(0, declaredArgs.indexOf(","));
+                        String valueTemp = args.substring(0, args.indexOf("::"));
+                        fin += ", "+temp+" "+valueTemp;
+                        declaredArgs = declaredArgs.substring(declaredArgs.indexOf(",")+1);
+                        args = args.substring(args.indexOf("::")+2);
+                    }
+                    fin += ", "+declaredArgs+" "+args+")\n";
+                }else{
+                    fin +=")\n";
+                }
             }
         }
         out.write(fin);
-        return _ret;
+        return "%_"+tFin;
     }
 
     /**
@@ -1092,7 +1185,13 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f1 -> ExpressionTail()
      */
     public String visit(ExpressionList n, String argu) throws Exception {
-        return n.f0.accept(this, argu)+n.f1.accept(this, argu);
+        String expr1 = n.f0.accept(this, argu);
+        String expr2 = n.f1.accept(this, argu);
+        if(expr2 != null){
+            return n.f0.accept(this, argu)+n.f1.accept(this, argu);
+        }else{
+            return n.f0.accept(this, argu);
+        }
     }
 
     /**
