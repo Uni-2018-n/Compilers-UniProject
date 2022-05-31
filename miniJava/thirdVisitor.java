@@ -1063,8 +1063,19 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String fin = "";
         int tFin = regC++;
         if(expr.contains("%")){
-            String className = expr.substring(0, expr.indexOf("::/::"));
-            expr = expr.substring(expr.indexOf("::/::")+5);
+            String className;
+            if(expr.contains("::/::")){
+                className = expr.substring(0, expr.indexOf("::/::"));
+                expr = expr.substring(expr.indexOf("::/::")+5);
+            }else{
+                String temp = argu.substring(0, argu.lastIndexOf("::"));
+                if(temp.contains("::")){
+                    className = temp.substring(temp.lastIndexOf("::")+2);
+                }else{
+                    className = temp;
+                }
+            }
+
             int offset = firstV.getOffset(id, className, true)/8;
             String type = getDeclarationFunc(id, firstV.classesLookup(className));
             String declaredArgs = getDeclaration(id, className);
@@ -1137,8 +1148,6 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 String type = getDeclarationFunc(id, firstV.classesLookup(className));//type of test
                 String declaredArgs = getDeclaration(id, className);//arguments of test
                 declaredArgs = declaredArgs.substring(0, declaredArgs.lastIndexOf(" @"));
-                System.out.println("test:"+ myOffset);
-                System.out.println(offset);
                 int t1 = regC++;
                 int t2 = regC++;
                 int t3 = regC++;
@@ -1147,11 +1156,9 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 int t7 = regC++;
                 int t8 = regC++;
                 int t9 = regC++;
-                int t10 = regC++;
                 fin +=
                     "%_"+t8+" = getelementptr i8, i8* %this, i32 "+myOffset+"\n"+
                     "%_"+t9+" = bitcast i8* %_"+t8+" to i8**\n"+
-                    // "store i8* %_"+t10+", i8** %_"+t9+"\n"+
 
                     "%_"+t7+" = load i8*, i8** %_"+t9+"\n"+
                     "%_"+t1+" = bitcast i8* %_"+t7+" to i8***\n"+
@@ -1298,7 +1305,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      *       | TrueLiteral()
      *       | FalseLiteral()
      *       | Identifier()
-     *       | ThisExpression()//TODO:done with assignment, only messageSent
+     *       | ThisExpression()
      *       | ArrayAllocationExpression()
      *       | AllocationExpression()
      *       | BracketExpression()
