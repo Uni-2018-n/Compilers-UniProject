@@ -1195,9 +1195,9 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String expr1 = n.f0.accept(this, argu);
         String expr2 = n.f1.accept(this, argu);
         if(expr2 != null){
-            return n.f0.accept(this, argu)+n.f1.accept(this, argu);
+            return expr1+expr2;
         }else{
-            return n.f0.accept(this, argu);
+            return expr1;
         }
     }
 
@@ -1262,6 +1262,9 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 }else if(type.contains("i1")){
                     fin +=
                         "%_"+reg+" = load i1, i1* %"+t+"\n";
+                }else if(type.contains("i8")){
+                    fin +=
+                        "%_"+reg+" = load i8*, i8** %"+t+"\n";
                 }
             }else{
                 int t1c = regC++;
@@ -1279,6 +1282,11 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                         "%_"+t1c+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
                         "%_"+t1cc+" = bitcast i8* %_"+t1c+" to i1*\n"+
                         "%_"+reg+ " = load i1, i1* %_"+t1cc+"\n";
+                }else if(type.contains("i8")){
+                    fin +=
+                        "%_"+t1c+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
+                        "%_"+t1cc+" = bitcast i8* %_"+t1c+" to i8**\n"+
+                        "%_"+reg+" = load i8*, i8** %_"+t1cc+"\n";
                 }
             }
         }
@@ -1486,7 +1494,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         int t2 = regC++;
         int t3 = regC++;
         String fin =
-                "%_"+t1+" = call i8* @calloc(i32 1, i32 "+(offset+8)+")\n"+
+                "%_"+t1+" = call i8* @calloc(i32 1, i32 "+(offset+16)+")\n"+
                 "%_"+t2+" = bitcast i8* %_"+t1+" to i8***\n"+
                 "%_"+t3+" = getelementptr ["+funcsLen+" x i8*], ["+funcsLen+" x i8*]* @."+id+"_vtable, i32 0, i32 0\n"+
                 "store i8** %_"+t3+", i8*** %_"+t2+"\n";
