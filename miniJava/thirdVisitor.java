@@ -357,7 +357,6 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String type = n.f1.accept(this, argu);
         String id = n.f2.accept(this, argu);
         String params = n.f4.accept(this, argu);
-
         String fin =
         "define "+ type + " @"+argu+"."+id+"(i8* %this";
         if(params != null){
@@ -389,11 +388,20 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     public String visit(FormalParameterList n, String argu) throws Exception {
         String _ret=null;
         String temp = n.f0.accept(this, argu);
-        String temp2 = n.f1.accept(this, temp);
-        if(temp2 != null){
-            return temp2;
+        String arguments = "";
+        String init= "";
+
+        arguments= temp.substring(0, temp.indexOf("//"));
+        init = temp.substring(temp.indexOf("//")+2);
+
+        for(Node i : n.f1.f0.nodes){
+            String j= i.accept(this, argu);
+            String first= j.substring(0, j.indexOf("//"));
+            String second = j.substring(j.indexOf("//")+2);
+            arguments += first;
+            init += second;
         }
-        return temp;
+        return arguments+"//"+init;
     }
 
     /**
@@ -760,20 +768,24 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         if(argu.contains("::/::"))
         argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String t1 = n.f0.accept(this, argu);
-        String t2 = n.f2.accept(this, argu);
         int l1 = labelC++;
         int l2 = labelC++;
         int l3 = labelC++;
+        int l4 = labelC++;
         int regOut = regC++;
         String fin =
-                "br i1 "+t1+", label %if"+l1+", label %else"+l2+"\n"+
-            "if"+l1+":\n";
-        fin +=
+                "br label %andclause"+l4+"\n"+
+            "andclause"+l4+":\n"+
+                "br i1 "+t1+", label %if"+l1+", label %fin"+l3+"\n"+
+        "if"+l1+":\n";
+        out.write(fin);
+        String t2 = n.f2.accept(this, argu);
+        fin =
+                "br label %else"+l2+"\n"+
+        "else"+l2+":\n"+
                 "br label %fin"+l3+"\n"+
-            "else"+l2+":\n"+
-                "br label %fin"+l3+"\n"+
-            "fin"+l3+":\n"+
-                "%_"+regOut+" = phi i1 [ false, %if"+l1+"], ["+t2+", %else"+l2+"]\n";
+        "fin"+l3+":\n"+
+                "%_"+regOut+" = phi i1 [ false, %andclause"+l4+"], ["+t2+", %else"+l2+"]\n";
         out.write(fin);
         return "%_"+regOut;
     }
@@ -1193,12 +1205,11 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(ExpressionList n, String argu) throws Exception {
         String expr1 = n.f0.accept(this, argu);
-        String expr2 = n.f1.accept(this, argu);
-        if(expr2 != null){
-            return expr1+expr2;
-        }else{
-            return expr1;
+        String temp = "";
+        for(Node i : n.f1.f0.nodes){
+            temp += "::"+i.accept(this, argu);
         }
+        return expr1+temp;
     }
 
     /**
@@ -1213,7 +1224,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      * f1 -> Expression()
      */
     public String visit(ExpressionTerm n, String argu) throws Exception {
-        return "::"+n.f1.accept(this, argu);
+        return n.f1.accept(this, argu);
     }
 
     /**
@@ -1303,7 +1314,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String t = n.f1.accept(this, argu);
         int reg = regC++;
         String fin =
-                "%_"+reg+" = xor i1 "+t+", true\n";//TODO: check if xor is 100% correct for not.
+                "%_"+reg+" = xor i1 1, "+t+"\n";
         out.write(fin);
         return "%_"+reg;
     }
