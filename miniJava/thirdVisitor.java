@@ -122,9 +122,10 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         return "%_"+String.valueOf(outC);
     }
 
-        public String getDeclaration(String id, String className){
+    public String getDeclaration(String id, String className, String myClassName) throws Exception{
+
         String ret = "";
-        String retType = firstV.lookUp(id, className+"::"+id, 1);
+        String retType = firstV.lookUp(id, firstV.classesLookup(className)+"::"+id, 1);
         if(retType.equals("int")){
             ret +="i32 ";
         }else if(retType.equals("bool")){
@@ -136,10 +137,22 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         }else{
             ret +="i8* ";
         }
-        
+
         ret += "(";
 
-        ArrayList<String> params = firstV.functions.get(id).get(className);
+        ArrayList<String> params;
+        String classNameTemp= firstV.classesLookup(className);
+        while(true){
+            if(firstV.functions.get(id).containsKey(classNameTemp)){
+                params= firstV.functions.get(id).get(classNameTemp);
+                break;
+            }
+            if(classNameTemp.contains("::")){
+                classNameTemp = classNameTemp.substring(0, classNameTemp.lastIndexOf("::"));
+            }else{
+                throw new Exception("gone here, i should never have gone here. this is a mistake.");
+            }
+        }
 
         ret += "i8*";
         if(!params.isEmpty()){
@@ -157,7 +170,24 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 }
             }
         }
-        ret += ")* @"+className+"."+id+" to i8*";
+
+        String retClassName = "";
+        if(!myClassName.equals("")){
+            String tempClass = firstV.classesLookup(myClassName);
+            while(true){
+                if(firstV.fields.containsKey(id)){
+                    if(firstV.fields.get(id).containsKey(tempClass)){
+                        retClassName = tempClass;
+                        break;
+                    }
+                    tempClass = tempClass.substring(0, tempClass.lastIndexOf("::"));
+                }
+            }
+        }
+        if(retClassName.contains("::")){
+            retClassName = retClassName.substring(retClassName.lastIndexOf("::")+2);
+        }
+        ret += ")* @"+retClassName+"."+id+" to i8*";
             return ret;
     }
 
@@ -209,6 +239,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     String _ret=null;
     String vTables="";
     for(Map.Entry<String, pair>ite : firstV.offsets.entrySet()){
+
         vTables += "@."+ite.getKey()+"_vtable = global [";
         String temp = firstV.classesLookup(ite.getKey());
         if(temp.contains("::")){
@@ -231,7 +262,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
 
                 sizeOfAll += firstV.offsets.get(ptemp).functions.size();
                 for(int i=0;i<firstV.offsets.get(ptemp).functions.size();i++){
-                    vtablesTemp +="i8* bitcast ("+getDeclaration(firstV.offsets.get(ptemp).functions.get(i).id, ptemp)+")";
+                    vtablesTemp +="i8* bitcast ("+getDeclaration(firstV.offsets.get(ptemp).functions.get(i).id, ptemp, ite.getKey())+")";
                     vtablesTemp +=", ";
                 }
                 if(ptemp.equals(temp)){
@@ -243,7 +274,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         vTables +=sizeOfAll+" x i8*] ["+vtablesTemp;
 
         for(int i=0;i<ite.getValue().functions.size();i++){
-            vTables +="i8* bitcast ("+getDeclaration(ite.getValue().functions.get(i).id, ite.getKey())+")";
+            vTables +="i8* bitcast ("+getDeclaration(ite.getValue().functions.get(i).id, ite.getKey(), ite.getKey())+")";
             vTables +=", ";
         }
         if(vTables.endsWith(", ")){
@@ -347,7 +378,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String _ret=null;
         String id = n.f1.accept(this, argu);
         String idex = n.f3.accept(this, argu);
-        // n.f5.accept(this, argu); //no need for var declaration
+//         n.f5.accept(this, argu); //no need for var declaration
         n.f6.accept(this, idex+"::"+id);
         return _ret;
     }
@@ -1128,7 +1159,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
 
             int offset = firstV.getOffset(id, className, true)/8;
             String type = getDeclarationFunc(id, firstV.classesLookup(className));
-            String declaredArgs = getDeclaration(id, className);
+            String declaredArgs = getDeclaration(id, className, "");
             declaredArgs = declaredArgs.substring(0, declaredArgs.lastIndexOf(" @"));
             int t1 = regC++;
             int t2 = regC++;
@@ -1161,7 +1192,8 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 String className = firstV.lookUp(expr, argu, 0);
                 int offset = firstV.getOffset(id, className, true)/8;
                 String type = getDeclarationFunc(id, firstV.classesLookup(className));
-                String declaredArgs = getDeclaration(id, className);
+                String declaredArgs = getDeclaration(id, className, "");
+
                 declaredArgs = declaredArgs.substring(0, declaredArgs.lastIndexOf(" @"));
                 int t1 = regC++;
                 int t2 = regC++;
@@ -1196,7 +1228,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 int myOffset = firstV.getOffset(expr, argu, false);//offset of i
                 int offset = firstV.getOffset(id, className, true)/8;//offset of test
                 String type = getDeclarationFunc(id, firstV.classesLookup(className));//type of test
-                String declaredArgs = getDeclaration(id, className);//arguments of test
+                String declaredArgs = getDeclaration(id, className, "");//arguments of test
                 declaredArgs = declaredArgs.substring(0, declaredArgs.lastIndexOf(" @"));
                 int t1 = regC++;
                 int t2 = regC++;

@@ -597,8 +597,16 @@ public class secondVisitor extends GJDepthFirst<String, String> {
                 throw new Exception("error class has no method named "+funcID);
             }
             if(n.f4.accept(this, idHistory+"::"+funcID+"/+/"+argu) == null){//very special case,
-                if(firstV.functions.get(funcID).get(idHistory).size() != 0){
-                    throw new Exception("wrong type parameters given for "+ funcID);
+                String temp = idHistory;
+                while(true){
+                    if(firstV.functions.containsKey(funcID) && firstV.functions.get(funcID).containsKey(temp) && firstV.functions.get(funcID).get(temp).size() != 0){
+                        throw new Exception("wrong type parameters given for "+ funcID);
+                    }
+                    if(temp.contains("::")){
+                        temp = temp.substring(0, temp.indexOf("::"));
+                    }else{
+                        break;
+                    }
                 }
             }
             return funcReturnType;
