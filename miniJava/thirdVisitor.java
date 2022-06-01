@@ -209,13 +209,45 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     String _ret=null;
     String vTables="";
     for(Map.Entry<String, pair>ite : firstV.offsets.entrySet()){
-        vTables += "@."+ite.getKey()+"_vtable = global ["+ite.getValue().functions.size()+" x i8*] [";
+        vTables += "@."+ite.getKey()+"_vtable = global [";
+        String temp = firstV.classesLookup(ite.getKey());
+        if(temp.contains("::")){
+            temp = temp.substring(0, temp.lastIndexOf("::"));
+        }else{
+            temp = "";
+        }
+
+        int sizeOfAll = ite.getValue().functions.size();
+        String vtablesTemp = "";
+        if(!temp.equals("")){
+            while(true){
+                String ptemp;
+                if(temp.contains("::")){
+                    ptemp = temp.substring(0, temp.indexOf("::"));
+                    temp = temp.substring(temp.indexOf("::")+2);
+                }else{
+                    ptemp = temp;
+                }
+
+                sizeOfAll += firstV.offsets.get(ptemp).functions.size();
+                for(int i=0;i<firstV.offsets.get(ptemp).functions.size();i++){
+                    vtablesTemp +="i8* bitcast ("+getDeclaration(firstV.offsets.get(ptemp).functions.get(i).id, ptemp)+")";
+                    vtablesTemp +=", ";
+                }
+                if(ptemp.equals(temp)){
+                    break;
+                }
+            }
+        }
+
+        vTables +=sizeOfAll+" x i8*] ["+vtablesTemp;
 
         for(int i=0;i<ite.getValue().functions.size();i++){
             vTables +="i8* bitcast ("+getDeclaration(ite.getValue().functions.get(i).id, ite.getKey())+")";
-            if(i+1<ite.getValue().functions.size()){
-                vTables +=", ";
-            }
+            vTables +=", ";
+        }
+        if(vTables.endsWith(", ")){
+            vTables = vTables.substring(0, vTables.length()-2);
         }
         vTables +="]\n";
     }
@@ -223,7 +255,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     out.write(vTables);
 
 
-    String initStr = 
+    String initStr =
     "declare i8* @calloc(i32, i32)\n" +
     "declare i32 @printf(i8*, ...)\n"+
     "declare void @exit(i32)\n"+
@@ -311,12 +343,12 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     * f6 -> ( MethodDeclaration() )*
     * f7 -> "}"
     */
-    public String visit(ClassExtendsDeclaration n, String argu) throws Exception {//TODO: extends nothing is done
+    public String visit(ClassExtendsDeclaration n, String argu) throws Exception {
         String _ret=null;
         String id = n.f1.accept(this, argu);
-        n.f3.accept(this, argu);
+        String idex = n.f3.accept(this, argu);
         // n.f5.accept(this, argu); //no need for var declaration
-        n.f6.accept(this, id);
+        n.f6.accept(this, idex+"::"+id);
         return _ret;
     }
 
@@ -357,8 +389,14 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String type = n.f1.accept(this, argu);
         String id = n.f2.accept(this, argu);
         String params = n.f4.accept(this, argu);
+        String className;
+        if(argu.contains("::")){
+            className = argu.substring(argu.lastIndexOf("::")+2);
+        }else {
+            className = argu;
+        }
         String fin =
-        "define "+ type + " @"+argu+"."+id+"(i8* %this";
+        "define "+ type + " @"+className+"."+id+"(i8* %this";
         if(params != null){
             if(params.indexOf("//") != -1){
                 params = params.substring(0, params.indexOf("//"))+") {\n"+params.substring(params.indexOf("//")+2);
@@ -1500,7 +1538,6 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         String id = n.f1.accept(this, argu);
         int offset = firstV.getOffsetLast(id, false);
         int funcsLen = firstV.getOffsetLen(id, true);
-
         int t1 = regC++;
         int t2 = regC++;
         int t3 = regC++;

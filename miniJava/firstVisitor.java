@@ -174,11 +174,23 @@ public class firstVisitor extends GJDepthFirst<String, String> {
     }
 
     public int getOffsetLen(String className, boolean j){
-        if(j){
-            return offsets.get(className).functions.size();
-        }else{
-            return offsets.get(className).vars.size();
+        String temp=classesLookup(className);
+        int len=0;
+        while(temp.contains("::")){
+            String pp = temp.substring(0, temp.indexOf("::"));
+            if(j){
+                len += offsets.get(pp).functions.size();
+            }else {
+                len += offsets.get(pp).vars.size();
+            }
+            temp = temp.substring(temp.indexOf("::")+2);
         }
+        if(j){
+            len += offsets.get(temp).functions.size();
+        }else {
+            len += offsets.get(temp).vars.size();
+        }
+        return len;
     }
 
     public void insertField(String id, String scope, String type, int j) throws Exception{//simple insert that checks if it already exists or not
