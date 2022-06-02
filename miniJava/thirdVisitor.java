@@ -96,8 +96,8 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 fin +=
                         "%_"+t2c2+" = load i32, i32* %"+t2+"\n";
             }else{
-                String type = getDeclarationVar(t1, argu);
-                int offset = firstV.getOffset(t1, argu, false);
+                String type = getDeclarationVar(t2, argu);
+                int offset = firstV.getOffset(t2, argu, false);
                 fin +=
                         "%_"+t2c+" = getelementptr i8, i8* %this, i32 "+offset+"\n"+
                                 "%_"+t2cc+" = bitcast i8* %_"+t2c+" to i32*\n"+
@@ -129,7 +129,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     public String getDeclaration(String id, String className, String myClassName) throws Exception{
 
         String ret = "";
-        String retType = firstV.lookUp(id, firstV.classesLookup(className)+"::"+id, 1);
+        String retType = firstV.lookUp(id, className+"::"+id, 1);
         if(retType.equals("int")){
             ret +="i32 ";
         }else if(retType.equals("bool")){
@@ -142,10 +142,11 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
             ret +="i8* ";
         }
 
+
         ret += "(";
 
         ArrayList<String> params;
-        String classNameTemp= firstV.classesLookup(className);
+        String classNameTemp= className;
         while(true){
             if(firstV.functions.get(id).containsKey(classNameTemp)){
                 params= firstV.functions.get(id).get(classNameTemp);
@@ -273,7 +274,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 }
                 sizeOfAll += firstV.offsets.get(ptemp).functions.size();
                 for(int i=0;i<firstV.offsets.get(ptemp).functions.size();i++){
-                    vtablesTemp +="i8* bitcast ("+getDeclaration(firstV.offsets.get(ptemp).functions.get(i).id, ptemp, ite.getKey())+")";
+                    vtablesTemp +="i8* bitcast ("+getDeclaration(firstV.offsets.get(ptemp).functions.get(i).id, firstV.classesLookup(ptemp), ite.getKey())+")";
                     vtablesTemp +=", ";
                 }
                 if(ptemp.equals(temp)){
@@ -285,7 +286,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         vTables +=sizeOfAll+" x i8*] ["+vtablesTemp;
 
         for(int i=0;i<ite.getValue().functions.size();i++){
-            vTables +="i8* bitcast ("+getDeclaration(ite.getValue().functions.get(i).id, ite.getKey(), ite.getKey())+")";
+            vTables +="i8* bitcast ("+getDeclaration(ite.getValue().functions.get(i).id, firstV.classesLookup(ite.getKey()), ite.getKey())+")";
             vTables +=", ";
         }
         if(vTables.endsWith(", ")){
@@ -1147,7 +1148,7 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(MessageSend n, String argu) throws Exception {
         if(argu.contains("::/::"))
-        argu = argu.substring(0, argu.lastIndexOf("::/::"));
+            argu = argu.substring(0, argu.lastIndexOf("::/::"));
         String _ret=null;
         String expr = n.f0.accept(this, argu);
         String id = n.f2.accept(this, argu);
@@ -1161,15 +1162,13 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 expr = expr.substring(expr.indexOf("::/::")+5);
             }else{
                 String temp = argu.substring(0, argu.lastIndexOf("::"));
-                if(temp.contains("::")){
-                    className = temp.substring(temp.lastIndexOf("::")+2);
-                }else{
                     className = temp;
-                }
             }
-            
+            if(!className.contains("::")){
+                className = firstV.classesLookup(className);
+            }
             int offset = firstV.getOffset(id, className, true)/8;
-            String type = getDeclarationFunc(id, firstV.classesLookup(className));
+            String type = getDeclarationFunc(id, className);
             String declaredArgs = getDeclaration(id, className, "");
             declaredArgs = declaredArgs.substring(0, declaredArgs.lastIndexOf(" @"));
             int t1 = regC++;
@@ -1207,8 +1206,9 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         }else{
             if(lookUp(expr, argu)){
                 String className = firstV.lookUp(expr, argu, 0);
+                className = firstV.classesLookup(className);
                 int offset = firstV.getOffset(id, className, true)/8;
-                String type = getDeclarationFunc(id, firstV.classesLookup(className));
+                String type = getDeclarationFunc(id, className);
                 String declaredArgs = getDeclaration(id, className, "");
                 declaredArgs = declaredArgs.substring(0, declaredArgs.lastIndexOf(" @"));
                 int t1 = regC++;
@@ -1241,9 +1241,10 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                 }
             }else{
                 String className = firstV.lookUp(expr, argu, 0);//of i
+                className = firstV.classesLookup(className);
                 int myOffset = firstV.getOffset(expr, argu, false);//offset of i
                 int offset = firstV.getOffset(id, className, true)/8;//offset of test
-                String type = getDeclarationFunc(id, firstV.classesLookup(className));//type of test
+                String type = getDeclarationFunc(id, className);//type of test
                 String declaredArgs = getDeclaration(id, className, "");//arguments of test
                 declaredArgs = declaredArgs.substring(0, declaredArgs.lastIndexOf(" @"));
                 int t1 = regC++;
