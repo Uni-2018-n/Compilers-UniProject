@@ -1,0 +1,63 @@
+import syntaxtree.*;
+import visitor.*;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        if(args.length == 0){
+            System.err.println("Usage: java Main <inputFile> <inputFile> <inputFile> ...");
+            System.exit(1);
+        }
+
+
+
+        FileInputStream fis = null;
+        for(int pp=0;pp<args.length;pp++){
+            try{
+                fis = new FileInputStream(args[pp]);
+                MiniJavaParser parser = new MiniJavaParser(fis);
+
+                Goal root = parser.Goal();
+
+//                System.out.println("Program parsed successfully.");
+
+                firstVisitor eval = new firstVisitor();
+                root.accept(eval, null);//accept for first visitor
+
+//                System.out.println("First part DONE:");
+
+                secondVisitor secVis = new secondVisitor(eval);
+                root.accept(secVis, null);//accept for second with parameter the first
+                // eval.offsetPrint();//print offsets
+                System.out.println(args[pp]+" success2");
+                thirdVisitor thirdVis = new thirdVisitor(args[pp], eval);
+                root.accept(thirdVis, null);
+                System.out.println(args[pp]+" success3");
+            }
+            catch(ParseException ex){
+                System.err.println(ex.getMessage());
+            }
+            catch(FileNotFoundException ex){
+                System.err.println(ex.getMessage());
+            }
+            catch(Exception ex){
+                System.err.println(ex.getMessage());
+                System.err.println("failed for "+args[pp]);
+            }
+            finally{
+                try{
+                    if(fis != null) fis.close();
+                }
+                catch(IOException ex){
+                    System.err.println(ex.getMessage());
+                }
+            }
+        }
+    }
+}
