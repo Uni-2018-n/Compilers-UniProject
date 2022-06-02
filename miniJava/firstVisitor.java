@@ -160,6 +160,9 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         return -1;
     }
     public int getOffsetLast(String className, boolean j){
+        if(!offsets.containsKey(className)){
+            return 0;
+        }
         if(j){
             if(offsets.get(className).functions.isEmpty()){
                 return 0;
@@ -178,6 +181,10 @@ public class firstVisitor extends GJDepthFirst<String, String> {
         int len=0;
         while(temp.contains("::")){
             String pp = temp.substring(0, temp.indexOf("::"));
+            if(!offsets.containsKey(pp)){
+                temp = temp.substring(temp.indexOf("::")+2);
+                continue;
+            }
             if(j){
                 len += offsets.get(pp).functions.size();
             }else {
