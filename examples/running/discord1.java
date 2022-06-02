@@ -1,4 +1,4 @@
-class Example {
+class discord1 {
     public static void main(String[] args) {
         int a;
         a = 3;

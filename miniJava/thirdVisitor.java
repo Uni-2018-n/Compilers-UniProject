@@ -40,7 +40,8 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
         }
     }
 
-    public String doSmthWithInts(String t1, String t2, String argu, String action){
+    public String doSmthWithInts(PrimaryExpression tt1, PrimaryExpression tt2, String argu, String action) throws Exception{
+        String t1 = tt1.accept(this, argu);
         Pattern pattern = Pattern.compile("-?\\d+(\\.\\d+)?");
         String fin = "";
 
@@ -71,6 +72,9 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
                     "%_"+t1c2+ " = load i32, i32* %_"+t1cc+"\n";
             }
         }
+        out.write(fin);
+        fin = "";
+        String t2 = tt2.accept(this, argu);
 
         int t2c = regC++;
         int t2c2 = regC++;
@@ -874,10 +878,10 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     public String visit(CompareExpression n, String argu) throws Exception {
         if(argu.contains("::/::"))
             argu = argu.substring(0, argu.lastIndexOf("::/::"));
-        String t1 = n.f0.accept(this, argu);
-        String t2 = n.f2.accept(this, argu);
+        // String t1 = n.f0.accept(this, argu);
+        // String t2 = n.f2.accept(this, argu);
 
-        return doSmthWithInts(t1, t2, argu, "icmp");
+        return doSmthWithInts(n.f0, n.f2, argu, "icmp");
     }
 
     /**
@@ -888,10 +892,10 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     public String visit(PlusExpression n, String argu) throws Exception {
         if(argu.contains("::/::"))
             argu = argu.substring(0, argu.lastIndexOf("::/::"));
-            String t1 = n.f0.accept(this, argu);
-            String t2 = n.f2.accept(this, argu);
+            // String t1 = n.f0.accept(this, argu);
+            // String t2 = n.f2.accept(this, argu);
 
-        return doSmthWithInts(t1, t2, argu, "add");
+        return doSmthWithInts(n.f0, n.f2, argu, "add");
     }
 
     /**
@@ -902,10 +906,10 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     public String visit(MinusExpression n, String argu) throws Exception {
         if(argu.contains("::/::"))
             argu = argu.substring(0, argu.lastIndexOf("::/::"));
-        String t1 = n.f0.accept(this, argu);
-        String t2 = n.f2.accept(this, argu);
+        // String t1 = n.f0.accept(this, argu);
+        // String t2 = n.f2.accept(this, argu);
 
-        return doSmthWithInts(t1, t2, argu, "sub");
+        return doSmthWithInts(n.f0, n.f2, argu, "sub");
     }
 
     /**
@@ -916,10 +920,10 @@ public class thirdVisitor extends GJDepthFirst<String, String> {
     public String visit(TimesExpression n, String argu) throws Exception {
         if(argu.contains("::/::"))
             argu = argu.substring(0, argu.lastIndexOf("::/::"));
-        String t1 = n.f0.accept(this, argu);
-        String t2 = n.f2.accept(this, argu);
+        // String t1 = n.f0.accept(this, argu);
+        // String t2 = n.f2.accept(this, argu);
 
-        return doSmthWithInts(t1, t2, argu, "mul");
+        return doSmthWithInts(n.f0, n.f2, argu, "mul");
     }
 
     /**
